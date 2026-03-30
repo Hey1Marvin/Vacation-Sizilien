@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unterkunfts-Übersicht Sizilien Juni 2026</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header>
+  <h1>Sizilien Urlaub Juni 2026</h1>
+  <p>Unterkunfts-Übersicht &amp; Vergleich &middot; 5 Personen &middot; Raum Palermo</p>
+</header>
+
+<div class="container">
+
+  <h2>Karte aller Unterkünfte</h2>
+  <div id="map"></div>
+  <div class="map-legend" id="map-legend"></div>
+
+  <h2>Schnellvergleich</h2>
+  <div id="comparison-tables"></div>
+
+  <h2>Rankings</h2>
+  <div class="ranking-grid" id="rankings"></div>
+
+  <h2>Alle Unterkünfte im Detail</h2>
+  <div id="hotel-cards"></div>
+
+  <h2>Unterkunft hinzufügen</h2>
+  <div class="add-form">
+    <h3>Neue Unterkunft eintragen</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Name *</label><input id="f-name" placeholder="z.B. Villa Bella"></div>
+      <div class="form-group"><label>Typ</label><input id="f-type" placeholder="z.B. Ferienwohnung"></div>
+      <div class="form-group"><label>Ort *</label><input id="f-location" placeholder="z.B. Palermo Zentrum"></div>
+      <div class="form-group"><label>Adresse</label><input id="f-address" placeholder="z.B. Via Roma 123, Palermo"></div>
+      <div class="form-group"><label>Plattform</label>
+        <select id="f-platform"><option>Booking.com</option><option>Airbnb</option><option>Andere</option></select>
+      </div>
+      <div class="form-group"><label>Link zur Unterkunft</label><input id="f-link" type="url" placeholder="https://..."></div>
+      <div class="form-group"><label>Herausgesucht von</label><input id="f-selectedBy" placeholder="z.B. Sebas"></div>
+      <div class="form-group"><label>Farbe (Header)</label>
+        <select id="f-color">
+          <option value="#2980b9">Blau</option><option value="#c0392b">Rot</option>
+          <option value="#27ae60">Grün</option><option value="#8e44ad">Lila</option>
+          <option value="#e67e22">Orange</option><option value="#b7950b">Gold</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Check-in Datum *</label><input id="f-dateFrom" type="date"></div>
+      <div class="form-group"><label>Check-out Datum *</label><input id="f-dateTo" type="date"></div>
+      <div class="form-group"><label>Personen</label><input id="f-persons" type="number" value="5" min="1"></div>
+      <div class="form-group"><label>Gesamtpreis (Euro) *</label><input id="f-price" type="number" placeholder="z.B. 500"></div>
+      <div class="form-group"><label>Originalpreis (Euro)</label><input id="f-origPrice" type="number" placeholder="vor Rabatt"></div>
+      <div class="form-group"><label>Bewertung (1-10 oder 1-5)</label><input id="f-rating" type="number" step="0.1" placeholder="z.B. 9.2"></div>
+      <div class="form-group"><label>Bewertungsskala</label>
+        <select id="f-ratingScale"><option value="10">von 10</option><option value="5">von 5 (Airbnb)</option></select>
+      </div>
+      <div class="form-group"><label>Anzahl Bewertungen</label><input id="f-ratingCount" type="number" placeholder="z.B. 56"></div>
+      <div class="form-group"><label>Größe (m²)</label><input id="f-sqm" type="number" placeholder="z.B. 50"></div>
+      <div class="form-group"><label>Schlafzimmer</label><input id="f-bedrooms" type="number" placeholder="z.B. 2"></div>
+      <div class="form-group"><label>Badezimmer</label><input id="f-bathrooms" type="number" placeholder="z.B. 1"></div>
+      <div class="form-group"><label>Betten-Beschreibung</label><input id="f-beds" placeholder="z.B. 1 Doppel + 2 Einzel"></div>
+      <div class="form-group"><label>Check-in Zeiten</label><input id="f-checkin" placeholder="z.B. ab 15:00"></div>
+      <div class="form-group"><label>Check-out Zeiten</label><input id="f-checkout" placeholder="z.B. bis 10:00"></div>
+      <div class="form-group"><label>Stornierung</label>
+        <select id="f-cancel"><option value="free">Kostenlos stornierbar</option><option value="partial">Teilweise erstattbar</option><option value="none">Nicht kostenlos</option></select>
+      </div>
+      <div class="form-group"><label>Storno-Details</label><input id="f-cancelNote" placeholder="z.B. bis 27.05."></div>
+      <div class="form-group"><label>Parkplatz</label><input id="f-parking" placeholder="z.B. Gratis Parkplatz"></div>
+      <div class="form-group"><label>Gastgeber</label><input id="f-host" placeholder="z.B. Maria"></div>
+      <div class="form-group full"><label>Ausstattung (kommasepariert)</label><input id="f-features" placeholder="z.B. Klimaanlage, WLAN, Küche, Balkon, Waschmaschine"></div>
+      <div class="form-group"><label>Entfernung Palermo</label><input id="f-dPalermo" placeholder="z.B. 2 km"></div>
+      <div class="form-group"><label>Entfernung Strand</label><input id="f-dStrand" placeholder="z.B. 1,5 km"></div>
+      <div class="form-group"><label>Entfernung Bahnhof</label><input id="f-dBahn" placeholder="z.B. 500 m"></div>
+      <div class="form-group"><label>Entfernung Flughafen</label><input id="f-dFlug" placeholder="z.B. 15 km"></div>
+      <div class="form-group"><label>Breitengrad (Karte)</label><input id="f-lat" type="number" step="0.0001" placeholder="z.B. 38.12"></div>
+      <div class="form-group"><label>Längengrad (Karte)</label><input id="f-lng" type="number" step="0.0001" placeholder="z.B. 13.35"></div>
+      <div class="form-group full"><label>Vorteile (zeilenweise)</label><textarea id="f-pros" placeholder="Ein Vorteil pro Zeile"></textarea></div>
+      <div class="form-group full"><label>Nachteile (zeilenweise)</label><textarea id="f-cons" placeholder="Ein Nachteil pro Zeile"></textarea></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addHotel()">Unterkunft hinzufügen</button>
+        <button class="btn btn-secondary" onclick="clearForm()">Formular leeren</button>
+        <button class="btn btn-secondary" onclick="exportData()">Daten als JSON exportieren</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>Erstellt am 30.03.2026 &middot; Preise inkl. Steuern &amp; Gebühren &middot; Preise können sich ändern</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="hotels.js"></script>
+<script>
+// ─── Helpers ───
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function fmt(d) { return new Date(d).toLocaleDateString('de-DE', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' }); }
+function pricePPN(h) { return (h.totalPrice / h.nights / h.persons).toFixed(2); }
+function ratingClass(h) {
+  const r = h.ratingScale === 5 ? h.rating * 2 : h.rating;
+  if (r >= 8.5) return 'great'; if (r >= 7.5) return 'gold'; if (r >= 7) return 'ok'; return 'ok';
+}
+function ratingDisplay(h) { return h.ratingScale === 5 ? h.rating + '/5' : h.rating.toFixed(1); }
+function cancelClass(h) {
+  if (h.cancellation.free) return 'storno-ja';
+  if (h.cancellation.partial) return 'storno-teil';
+  return 'storno-nein';
+}
+function cancelShort(h) {
+  if (h.cancellation.free) return h.cancellation.note;
+  if (h.cancellation.partial) return 'Teilw.';
+  return 'Nein';
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Map ───
+let map;
+function initMap() {
+  if (map) map.remove();
+  map = L.map('map').setView([38.145, 13.30], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 18
+  }).addTo(map);
+
+  HOTELS.forEach(h => {
+    if (!h.mapLat || !h.mapLng) return;
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="custom-marker" style="background:${h.colors.marker}">${h.id}</div>`,
+      iconSize: [30,30], iconAnchor: [15,15], popupAnchor: [0,-18]
+    });
+    L.marker([h.mapLat, h.mapLng], { icon })
+      .addTo(map)
+      .bindPopup(`<div style="font-family:Inter,sans-serif;min-width:200px">
+        <strong>${h.id}. ${esc(h.name)}</strong><br>
+        <span style="color:#666">${esc(h.location)}</span><br>
+        <span style="color:#888;font-size:.85em">${fmt(h.dateFrom)} - ${fmt(h.dateTo)}</span><br>
+        <strong style="color:#27ae60;font-size:1.2em">${h.totalPrice} Euro</strong>
+      </div>`);
+  });
+}
+
+// ─── Legend ───
+function renderLegend() {
+  const locs = [...new Set(HOTELS.map(h => h.location.split('(')[0].trim()))];
+  document.getElementById('map-legend').innerHTML =
+    '<span><strong>Legende:</strong> Nummern = Unterkünfte</span>' +
+    locs.map(l => `<span>${esc(l)}</span>`).join('');
+}
+
+// ─── Comparison Tables ───
+function renderTables() {
+  const groups = {};
+  HOTELS.forEach(h => {
+    const key = h.dateFrom + '_' + h.dateTo;
+    (groups[key] = groups[key] || []).push(h);
+  });
+
+  let html = '';
+  Object.keys(groups).sort().forEach(key => {
+    const list = groups[key].sort((a,b) => a.totalPrice - b.totalPrice);
+    const h0 = list[0];
+    const label = `${fmt(h0.dateFrom)} - ${fmt(h0.dateTo)} (${h0.nights} Nächte)`;
+    html += `<h3>${label}</h3>`;
+    html += `<table class="comparison-table"><thead><tr>
+      <th>#</th><th>Name</th><th>Ort</th><th>Preis</th><th>Euro/P./N.</th><th>Bewertung</th><th>m2</th><th>SZ</th><th>Strand</th><th>Palermo</th><th>Storno</th><th>Link</th>
+    </tr></thead><tbody>`;
+    list.forEach(h => {
+      const ppn = pricePPN(h);
+      const rCls = (h.ratingScale===5 ? h.rating*2 : h.rating) >= 8 ? 'rt-good' : (h.ratingScale===5 ? h.rating*2 : h.rating) >= 7 ? 'rt-ok' : 'rt-low';
+      html += `<tr>
+        <td><span class="marker-num" style="background:${h.colors.marker}">${h.id}</span></td>
+        <td><strong>${esc(h.name)}</strong>${h.selectedBy ? ' <em>('+esc(h.selectedBy)+')</em>':''}</td>
+        <td>${esc(h.location.split('(')[0].trim())}</td>
+        <td class="price-hl">${h.totalPrice}</td>
+        <td>${ppn}</td>
+        <td class="${rCls}">${ratingDisplay(h)} <small>(${h.ratingCount})</small></td>
+        <td>${h.sqm || '-'}</td>
+        <td>${h.bedrooms || '-'}</td>
+        <td>${h.distances.strand || '-'}</td>
+        <td>${h.distances.palermo || '-'}</td>
+        <td class="${cancelClass(h)}">${cancelShort(h)}</td>
+        <td><a href="${esc(h.link)}" target="_blank">${esc(h.platform)}</a></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  });
+  document.getElementById('comparison-tables').innerHTML = html;
+}
+
+// ─── Rankings ───
+function renderRankings() {
+  const sorted = [...HOTELS];
+  function rl(items, labelFn) {
+    return '<ol class="ranking-list">' + items.map((h,i) =>
+      `<li${i===0?' class="winner"':''}><span><span class="rank-num">${i+1}.</span> ${esc(h.name)}</span><strong>${labelFn(h)}</strong></li>`
+    ).join('') + '</ol>';
+  }
+
+  const byPPN = sorted.sort((a,b) => pricePPN(a)-pricePPN(b)).slice(0,5);
+  const byRating = sorted.filter(h=>h.ratingCount>=10).sort((a,b) => {
+    const ra = a.ratingScale===5?a.rating*2:a.rating, rb = b.ratingScale===5?b.rating*2:b.rating;
+    return rb-ra;
+  }).slice(0,5);
+  const bySqm = sorted.filter(h=>h.sqm).sort((a,b)=>b.sqm-a.sqm).slice(0,5);
+
+  document.getElementById('rankings').innerHTML = `
+    <div class="ranking-card"><h3>Preis-Leistung (Euro/Person/Nacht)</h3>${rl(byPPN, h => pricePPN(h) + ' Euro')}</div>
+    <div class="ranking-card"><h3>Bewertung (mind. 10 Reviews)</h3>${rl(byRating, h => ratingDisplay(h))}</div>
+    <div class="ranking-card"><h3>Größe (m2)</h3>${rl(bySqm, h => h.sqm + ' m2')}</div>
+    <div class="ranking-card"><h3>Gesamtsieger</h3><ol class="ranking-list">
+      <li class="winner"><span>* Bestes P/L: <strong>${esc(byPPN[0].name)}</strong></span></li>
+      <li><span>* Beste Bewertung: <strong>${esc(byRating[0].name)}</strong></span></li>
+      <li><span>* Meister Platz: <strong>${esc(bySqm[0].name)}</strong></span></li>
+    </ol></div>
+  `;
+}
+
+// ─── Hotel Cards ───
+function renderCards() {
+  let html = '';
+  HOTELS.forEach(h => {
+    const ppn = pricePPN(h);
+    const isAirbnb = h.platform === 'Airbnb';
+    const titleColor = h.colors.titleDark ? 'color:#333' : 'color:#fff';
+    const subColor = h.colors.titleDark ? 'color:#555' : '';
+
+    html += `<div class="hotel-card" id="hotel-${h.id}">`;
+
+    // Header
+    html += `<div class="hotel-header" style="background:${h.colors.header}">
+      <div class="hotel-num" style="background:${h.colors.num}">${h.id}</div>
+      <div class="hotel-title-block">
+        <h3 style="${titleColor}">${esc(h.name)}</h3>
+        <div class="subtitle" style="${subColor}">${esc(h.type)} - ${esc(h.location)} - ${esc(h.platform)}${h.selectedBy?' - <em>von '+esc(h.selectedBy)+'</em>':''}</div>
+      </div>
+      <div class="hotel-price-badge" ${h.colors.titleDark?'style="color:#333"':''}>${h.totalPrice} Euro<small ${h.colors.titleDark?'style="color:#555"':''}>${h.nights} Nächte gesamt</small></div>
+    </div>`;
+
+    // Availability bar
+    html += `<div class="avail-bar${isAirbnb?' airbnb':''}">
+      <div class="avail-item"><span class="avail-val">${fmt(h.dateFrom)} - ${fmt(h.dateTo)}</span></div>
+      <div class="avail-item"><span class="avail-label">Nächte:</span><span class="avail-val">${h.nights}</span></div>
+      <div class="avail-item"><span class="avail-label">Personen:</span><span class="avail-val">${h.persons}</span></div>
+      <div class="avail-item"><span class="avail-label">Pro Pers./Nacht:</span><span class="avail-val ${ppn<25?'cheap':'expensive'}">${ppn} Euro</span></div>
+      ${h.link ? `<div class="avail-link"><a href="${esc(h.link)}" target="_blank" class="${isAirbnb?'airbnb-btn':''}">Auf ${esc(h.platform)} ansehen</a></div>` : ''}
+    </div>`;
+
+    // Body
+    html += '<div class="hotel-body">';
+
+    // Rating
+    html += `<div class="rating-bar">
+      <span class="rating-score ${ratingClass(h)}">${ratingDisplay(h)}</span>
+      <span class="rating-text">${h.ratingCount} Bewertungen</span>
+    </div>`;
+
+    // Tags
+    html += '<div class="tags">';
+    if (h.sqm) html += `<span class="tag">${h.sqm} m2</span>`;
+    if (h.bedrooms) html += `<span class="tag">${h.bedrooms} Schlafzimmer</span>`;
+    if (h.bathrooms) html += `<span class="tag">${h.bathrooms} Bad${h.bathrooms>1?'er':''}</span>`;
+    h.features.forEach(f => {
+      let cls = 'tag';
+      if (f.includes('Gratis') || f.includes('kostenlos') || f.includes('Self-Check') || f.includes('24h')) cls += ' green';
+      if (f.includes('Nicht') || f.includes('Kein') || f.includes('Buchungsanfrage')) cls += ' red';
+      if (f.includes('!')) cls += ' highlight';
+      html += `<span class="${cls}">${esc(f)}</span>`;
+    });
+    if (h.parking) html += `<span class="tag green highlight">${esc(h.parking)}</span>`;
+    if (h.booking) html += `<span class="tag red">${esc(h.booking)}</span>`;
+    html += '</div>';
+
+    // Info grid
+    html += '<div class="info-grid">';
+    if (h.address) html += `<div class="info-item"><span class="info-label">Adresse</span><span class="info-value">${esc(h.address)}</span></div>`;
+    html += `<div class="info-item"><span class="info-label">Betten</span><span class="info-value">${esc(h.beds)}</span></div>`;
+    html += `<div class="info-item"><span class="info-label">Check-in</span><span class="info-value">${esc(h.checkin)}</span></div>`;
+    html += `<div class="info-item"><span class="info-label">Check-out</span><span class="info-value">${esc(h.checkout)}</span></div>`;
+    const cCls = h.cancellation.free ? 'good' : h.cancellation.partial ? 'warn' : 'bad';
+    html += `<div class="info-item"><span class="info-label">Stornierung</span><span class="info-value ${cCls}">${esc(h.cancellation.note)}</span></div>`;
+    if (h.host) html += `<div class="info-item"><span class="info-label">Gastgeber</span><span class="info-value">${esc(h.host)}</span></div>`;
+    html += '</div>';
+
+    // Distances
+    html += '<hr class="section-divider"><h3>Entfernungen</h3><div class="distances-mini">';
+    Object.entries(h.distances).forEach(([k,v]) => {
+      const labels = {palermo:'Palermo Zentrum',strand:'Strand',bahnhof:'Bahnhof',flughafen:'Flughafen'};
+      html += `<div class="dist-item"><span>${labels[k]||k}</span><span class="dist-val">${esc(v)}</span></div>`;
+    });
+    html += '</div>';
+
+    // Pros / Cons
+    if (h.pros.length || h.cons.length) {
+      html += '<div class="pros-cons">';
+      if (h.pros.length) { html += '<div class="pros"><h4>Vorteile</h4><ul>' + h.pros.map(p=>`<li>${esc(p)}</li>`).join('') + '</ul></div>'; }
+      if (h.cons.length) { html += '<div class="cons"><h4>Nachteile</h4><ul>' + h.cons.map(c=>`<li>${esc(c)}</li>`).join('') + '</ul></div>'; }
+      html += '</div>';
+    }
+
+    // Quotes
+    h.quotes.forEach(q => {
+      html += `<div class="quote">"${esc(q.text)}" <span class="author">- ${esc(q.author)}</span></div>`;
+    });
+
+    // Photos
+    if (h.photos && h.photos.length) {
+      html += '<details class="photos-toggle"><summary>Fotos &amp; Bilder ansehen</summary><div class="photos-grid">';
+      h.photos.forEach(p => {
+        html += `<div class="photo-card"><div class="photo-icon">${p.icon}</div><div class="photo-desc">${esc(p.desc)}</div></div>`;
+      });
+      html += '</div>';
+      if (h.link) html += `<a class="photo-link" href="${esc(h.link)}" target="_blank">Alle ${h.photoCount} Fotos auf ${esc(h.platform)} ansehen</a>`;
+      html += '</details>';
+    }
+
+    html += '</div></div>';
+  });
+  document.getElementById('hotel-cards').innerHTML = html;
+}
+
+// ─── Add Hotel ───
+function addHotel() {
+  const name = document.getElementById('f-name').value.trim();
+  const location = document.getElementById('f-location').value.trim();
+  const dateFrom = document.getElementById('f-dateFrom').value;
+  const dateTo = document.getElementById('f-dateTo').value;
+  const price = parseFloat(document.getElementById('f-price').value);
+
+  if (!name || !location || !dateFrom || !dateTo || isNaN(price)) {
+    toast('Bitte Pflichtfelder ausfüllen (Name, Ort, Daten, Preis)');
+    return;
+  }
+
+  const d1 = new Date(dateFrom), d2 = new Date(dateTo);
+  const nights = Math.round((d2 - d1) / 86400000);
+  if (nights <= 0) { toast('Check-out muss nach Check-in liegen'); return; }
+
+  const colorVal = document.getElementById('f-color').value;
+  const persons = parseInt(document.getElementById('f-persons').value) || 5;
+  const cancelMap = { free: {free:true,note:''}, partial: {free:false,partial:true,note:''}, none: {free:false,note:''} };
+  const cancelType = document.getElementById('f-cancel').value;
+  const cancel = cancelMap[cancelType];
+  cancel.note = document.getElementById('f-cancelNote').value.trim() ||
+    (cancelType === 'free' ? 'Kostenlos stornierbar' : cancelType === 'partial' ? 'Teilweise erstattbar' : 'Nicht kostenlos');
+
+  const newHotel = {
+    id: HOTELS.length + 1,
+    name,
+    type: document.getElementById('f-type').value.trim() || 'Unterkunft',
+    location,
+    address: document.getElementById('f-address').value.trim(),
+    platform: document.getElementById('f-platform').value,
+    link: document.getElementById('f-link').value.trim(),
+    selectedBy: document.getElementById('f-selectedBy').value.trim(),
+    dateFrom, dateTo, nights, persons,
+    totalPrice: price,
+    originalPrice: parseFloat(document.getElementById('f-origPrice').value) || null,
+    rating: parseFloat(document.getElementById('f-rating').value) || 0,
+    ratingScale: parseInt(document.getElementById('f-ratingScale').value),
+    ratingCount: parseInt(document.getElementById('f-ratingCount').value) || 0,
+    ratingCategories: {},
+    sqm: parseInt(document.getElementById('f-sqm').value) || null,
+    bedrooms: parseInt(document.getElementById('f-bedrooms').value) || 0,
+    bathrooms: parseInt(document.getElementById('f-bathrooms').value) || 0,
+    beds: document.getElementById('f-beds').value.trim(),
+    maxGuests: persons,
+    features: document.getElementById('f-features').value.split(',').map(s => s.trim()).filter(Boolean),
+    parking: document.getElementById('f-parking').value.trim(),
+    cancellation: cancel,
+    checkin: document.getElementById('f-checkin').value.trim() || '',
+    checkout: document.getElementById('f-checkout').value.trim() || '',
+    host: document.getElementById('f-host').value.trim(),
+    distances: {
+      palermo: document.getElementById('f-dPalermo').value.trim(),
+      strand: document.getElementById('f-dStrand').value.trim(),
+      bahnhof: document.getElementById('f-dBahn').value.trim(),
+      flughafen: document.getElementById('f-dFlug').value.trim()
+    },
+    pros: document.getElementById('f-pros').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    cons: document.getElementById('f-cons').value.split('\n').map(s=>s.trim()).filter(Boolean),
+    quotes: [],
+    photos: [],
+    photoCount: '0',
+    colors: {
+      header: `linear-gradient(135deg,${colorVal},${colorVal}dd)`,
+      num: colorVal,
+      marker: colorVal
+    },
+    mapLat: parseFloat(document.getElementById('f-lat').value) || null,
+    mapLng: parseFloat(document.getElementById('f-lng').value) || null
+  };
+
+  HOTELS.push(newHotel);
+  renderAll();
+  clearForm();
+  toast(`"${name}" hinzugefügt!`);
+  document.getElementById('hotel-' + newHotel.id)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function clearForm() {
+  document.querySelectorAll('.add-form input, .add-form textarea').forEach(el => {
+    if (el.type === 'number' && el.id === 'f-persons') { el.value = '5'; return; }
+    el.value = '';
+  });
+}
+
+function exportData() {
+  const json = JSON.stringify(HOTELS, null, 2);
+  const blob = new Blob([`const HOTELS = ${json};\n`], { type: 'application/javascript' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'hotels.js';
+  a.click();
+  toast('hotels.js exportiert!');
+}
+
+// ─── Render All ───
+function renderAll() {
+  initMap();
+  renderLegend();
+  renderTables();
+  renderRankings();
+  renderCards();
+}
+
+renderAll();
+</script>
+</body>
+</html>
