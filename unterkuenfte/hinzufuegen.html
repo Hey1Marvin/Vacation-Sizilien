@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unterkunft hinzuf&uuml;gen - Sizilien 2026</title>
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1" data-title="Hinzuf&uuml;gen"></div>
+
+<header>
+  <h1>Unterkunft hinzuf&uuml;gen</h1>
+  <p>Neue Unterkunftsoption eintragen</p>
+</header>
+
+<div class="container">
+
+  <div class="action-bar">
+    <a href="index.html" class="btn btn-secondary">&larr; Zur&uuml;ck zur &Uuml;bersicht</a>
+  </div>
+
+  <div class="add-form">
+    <h3>Neue Unterkunft eintragen</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Name <span class="required">*</span></label><input id="f-name" placeholder="z.B. Villa Bella"></div>
+      <div class="form-group"><label>Typ</label><input id="f-type" placeholder="z.B. Ferienwohnung"></div>
+      <div class="form-group"><label>Ort <span class="required">*</span></label><input id="f-location" placeholder="z.B. Palermo Zentrum"></div>
+      <div class="form-group"><label>Adresse</label><input id="f-address" placeholder="z.B. Via Roma 123, Palermo"></div>
+      <div class="form-group"><label>Plattform</label>
+        <select id="f-platform"><option>Booking.com</option><option>Airbnb</option><option>Andere</option></select>
+      </div>
+      <div class="form-group"><label>Link zur Unterkunft</label><input id="f-link" type="url" placeholder="https://..."></div>
+      <div class="form-group"><label>Herausgesucht von</label><input id="f-selectedBy" placeholder="z.B. Sebas"></div>
+      <div class="form-group"><label>Farbe (Header)</label>
+        <select id="f-color">
+          <option value="#2980b9">Blau</option><option value="#c0392b">Rot</option>
+          <option value="#27ae60">Gr&uuml;n</option><option value="#8e44ad">Lila</option>
+          <option value="#e67e22">Orange</option><option value="#b7950b">Gold</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Check-in Datum <span class="required">*</span></label><input id="f-dateFrom" type="date"></div>
+      <div class="form-group"><label>Check-out Datum <span class="required">*</span></label><input id="f-dateTo" type="date"></div>
+      <div class="form-group"><label>Personen</label><input id="f-persons" type="number" value="5" min="1"></div>
+      <div class="form-group"><label>Gesamtpreis (Euro) <span class="required">*</span></label><input id="f-price" type="number" placeholder="z.B. 500"></div>
+      <div class="form-group"><label>Originalpreis (Euro)</label><input id="f-origPrice" type="number" placeholder="vor Rabatt"></div>
+      <div class="form-group"><label>Bewertung (1-10 oder 1-5)</label><input id="f-rating" type="number" step="0.1" placeholder="z.B. 9.2"></div>
+      <div class="form-group"><label>Bewertungsskala</label>
+        <select id="f-ratingScale"><option value="10">von 10</option><option value="5">von 5 (Airbnb)</option></select>
+        <span class="help-text">Booking.com nutzt 1-10, Airbnb nutzt 1-5</span>
+      </div>
+      <div class="form-group"><label>Anzahl Bewertungen</label><input id="f-ratingCount" type="number" placeholder="z.B. 56"></div>
+      <div class="form-group"><label>Gr&ouml;&szlig;e (m&sup2;)</label><input id="f-sqm" type="number" placeholder="z.B. 50"></div>
+      <div class="form-group"><label>Schlafzimmer</label><input id="f-bedrooms" type="number" placeholder="z.B. 2"></div>
+      <div class="form-group"><label>Badezimmer</label><input id="f-bathrooms" type="number" placeholder="z.B. 1"></div>
+      <div class="form-group"><label>Betten-Beschreibung</label><input id="f-beds" placeholder="z.B. 1 Doppel + 2 Einzel"></div>
+      <div class="form-group"><label>Check-in Zeiten</label><input id="f-checkin" placeholder="z.B. ab 15:00"></div>
+      <div class="form-group"><label>Check-out Zeiten</label><input id="f-checkout" placeholder="z.B. bis 10:00"></div>
+      <div class="form-group"><label>Stornierung</label>
+        <select id="f-cancel"><option value="free">Kostenlos stornierbar</option><option value="partial">Teilweise erstattbar</option><option value="none">Nicht kostenlos</option></select>
+      </div>
+      <div class="form-group"><label>Storno-Details</label><input id="f-cancelNote" placeholder="z.B. bis 27.05."></div>
+      <div class="form-group"><label>Parkplatz</label><input id="f-parking" placeholder="z.B. Gratis Parkplatz"></div>
+      <div class="form-group"><label>Gastgeber</label><input id="f-host" placeholder="z.B. Maria"></div>
+      <div class="form-group full"><label>Ausstattung (kommasepariert)</label><input id="f-features" placeholder="z.B. Klimaanlage, WLAN, K&uuml;che, Balkon, Waschmaschine"></div>
+      <div class="form-group"><label>Entfernung Palermo</label><input id="f-dPalermo" placeholder="z.B. 2 km"></div>
+      <div class="form-group"><label>Entfernung Strand</label><input id="f-dStrand" placeholder="z.B. 1,5 km"></div>
+      <div class="form-group"><label>Entfernung Bahnhof</label><input id="f-dBahn" placeholder="z.B. 500 m"></div>
+      <div class="form-group"><label>Entfernung Flughafen</label><input id="f-dFlug" placeholder="z.B. 15 km"></div>
+      <div class="form-group"><label>Breitengrad (Karte)</label><input id="f-lat" type="number" step="0.0001" placeholder="z.B. 38.12"></div>
+      <div class="form-group"><label>L&auml;ngengrad (Karte)</label><input id="f-lng" type="number" step="0.0001" placeholder="z.B. 13.35"></div>
+      <div class="form-group full"><label>Vorteile (zeilenweise)</label><textarea id="f-pros" placeholder="Ein Vorteil pro Zeile"></textarea></div>
+      <div class="form-group full"><label>Nachteile (zeilenweise)</label><textarea id="f-cons" placeholder="Ein Nachteil pro Zeile"></textarea></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addHotel()">Unterkunft hinzuf&uuml;gen</button>
+        <button class="btn btn-secondary" onclick="clearForm()">Formular leeren</button>
+        <button class="btn btn-secondary" onclick="exportData()">Daten als JSON exportieren</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>Sizilien Urlaub Juni 2026</footer>
+
+<script src="../shared/helpers.js"></script>
+<script src="../shared/nav.js"></script>
+<script src="hotels.js"></script>
+<script>
+function addHotel() {
+  clearValidation();
+  var ok = true;
+  ok = validateRequired('f-name', 'Name ist erforderlich') & ok;
+  ok = validateRequired('f-location', 'Ort ist erforderlich') & ok;
+  ok = validateRequired('f-dateFrom', 'Check-in Datum ist erforderlich') & ok;
+  ok = validateRequired('f-dateTo', 'Check-out Datum ist erforderlich') & ok;
+  ok = validateRequired('f-price', 'Preis ist erforderlich') & ok;
+  if (!ok) { toast('Bitte Pflichtfelder ausf\u00FCllen', 'error'); return; }
+
+  var name = document.getElementById('f-name').value.trim();
+  var location = document.getElementById('f-location').value.trim();
+  var dateFrom = document.getElementById('f-dateFrom').value;
+  var dateTo = document.getElementById('f-dateTo').value;
+  var price = parseFloat(document.getElementById('f-price').value);
+
+  var d1 = new Date(dateFrom), d2 = new Date(dateTo);
+  var nights = Math.round((d2 - d1) / 86400000);
+  if (nights <= 0) { toast('Check-out muss nach Check-in liegen'); return; }
+
+  var colorVal = document.getElementById('f-color').value;
+  var persons = parseInt(document.getElementById('f-persons').value) || 5;
+  var cancelMap = { free: {free:true,note:''}, partial: {free:false,partial:true,note:''}, none: {free:false,note:''} };
+  var cancelType = document.getElementById('f-cancel').value;
+  var cancel = cancelMap[cancelType];
+  cancel.note = document.getElementById('f-cancelNote').value.trim() ||
+    (cancelType === 'free' ? 'Kostenlos stornierbar' : cancelType === 'partial' ? 'Teilweise erstattbar' : 'Nicht kostenlos');
+
+  var newHotel = {
+    id: HOTELS.length + 1,
+    name: name,
+    type: document.getElementById('f-type').value.trim() || 'Unterkunft',
+    location: location,
+    address: document.getElementById('f-address').value.trim(),
+    platform: document.getElementById('f-platform').value,
+    link: document.getElementById('f-link').value.trim(),
+    selectedBy: document.getElementById('f-selectedBy').value.trim(),
+    dateFrom: dateFrom, dateTo: dateTo, nights: nights, persons: persons,
+    totalPrice: price,
+    originalPrice: parseFloat(document.getElementById('f-origPrice').value) || null,
+    rating: parseFloat(document.getElementById('f-rating').value) || 0,
+    ratingScale: parseInt(document.getElementById('f-ratingScale').value),
+    ratingCount: parseInt(document.getElementById('f-ratingCount').value) || 0,
+    ratingCategories: {},
+    sqm: parseInt(document.getElementById('f-sqm').value) || null,
+    bedrooms: parseInt(document.getElementById('f-bedrooms').value) || 0,
+    bathrooms: parseInt(document.getElementById('f-bathrooms').value) || 0,
+    beds: document.getElementById('f-beds').value.trim(),
+    maxGuests: persons,
+    features: document.getElementById('f-features').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+    parking: document.getElementById('f-parking').value.trim(),
+    cancellation: cancel,
+    checkin: document.getElementById('f-checkin').value.trim() || '',
+    checkout: document.getElementById('f-checkout').value.trim() || '',
+    host: document.getElementById('f-host').value.trim(),
+    distances: {
+      palermo: document.getElementById('f-dPalermo').value.trim(),
+      strand: document.getElementById('f-dStrand').value.trim(),
+      bahnhof: document.getElementById('f-dBahn').value.trim(),
+      flughafen: document.getElementById('f-dFlug').value.trim()
+    },
+    pros: document.getElementById('f-pros').value.split('\n').map(function(s){return s.trim();}).filter(Boolean),
+    cons: document.getElementById('f-cons').value.split('\n').map(function(s){return s.trim();}).filter(Boolean),
+    quotes: [],
+    photos: [],
+    photoCount: '0',
+    colors: {
+      header: 'linear-gradient(135deg,' + colorVal + ',' + colorVal + 'dd)',
+      num: colorVal,
+      marker: colorVal
+    },
+    mapLat: parseFloat(document.getElementById('f-lat').value) || null,
+    mapLng: parseFloat(document.getElementById('f-lng').value) || null
+  };
+
+  HOTELS.push(newHotel);
+  clearForm();
+  toast('"' + name + '" hinzugef\u00FCgt! Jetzt exportieren, um zu speichern.');
+}
+
+function clearForm() {
+  document.querySelectorAll('.add-form input, .add-form textarea').forEach(function(el) {
+    if (el.type === 'number' && el.id === 'f-persons') { el.value = '5'; return; }
+    el.value = '';
+  });
+}
+
+function exportData() {
+  var json = JSON.stringify(HOTELS, null, 2);
+  var blob = new Blob(['const HOTELS = ' + json + ';\n'], { type: 'application/javascript' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'hotels.js';
+  a.click();
+  toast('hotels.js exportiert!');
+}
+</script>
+</body>
+</html>

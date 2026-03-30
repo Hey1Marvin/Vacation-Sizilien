@@ -1,0 +1,74 @@
+/* ─── Packliste-spezifische Styles ─── */
+
+.checklist-section {
+  background: var(--card-bg);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.checklist-header {
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+}
+.checklist-header:hover { background: #f8f9fa; }
+.checklist-header h3 { margin: 0; display: flex; align-items: center; gap: 8px; }
+.checklist-header .progress-text { font-size: .82em; color: var(--text-light); font-weight: 500; }
+
+.checklist-items { padding: 10px 20px 15px; }
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: .9em;
+}
+.check-item:last-child { border-bottom: none; }
+.check-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--green);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.check-item label {
+  cursor: pointer;
+  flex: 1;
+}
+.check-item.checked label {
+  text-decoration: line-through;
+  color: var(--text-light);
+}
+.check-item .zustaendig {
+  font-size: .8em;
+  color: var(--primary-light);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.total-progress {
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  margin-bottom: 25px;
+  text-align: center;
+}
+.total-progress .big-num {
+  font-size: 2.5em;
+  font-weight: 700;
+  color: var(--primary);
+}
+.total-progress .progress-bar { height: 12px; margin: 12px 0; }
+
+.reset-btn {
+  margin-top: 20px;
+  text-align: center;
+}

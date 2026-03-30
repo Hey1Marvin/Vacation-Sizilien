@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unterk&uuml;nfte - Sizilien Juni 2026</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1" data-title=""></div>
+
+<header>
+  <h1>Unterk&uuml;nfte</h1>
+  <p>&Uuml;bersicht &amp; Vergleich &middot; 5 Personen &middot; Raum Palermo</p>
+</header>
+
+<div class="container">
+
+  <div class="action-bar">
+    <a href="hinzufuegen.html" class="btn btn-primary">+ Neue Unterkunft hinzuf&uuml;gen</a>
+  </div>
+
+  <h2>Karte aller Unterk&uuml;nfte</h2>
+  <div id="map"></div>
+  <div class="map-legend" id="map-legend"></div>
+
+  <h2>Schnellvergleich</h2>
+  <div id="comparison-tables"></div>
+
+  <h2>Rankings</h2>
+  <div class="ranking-grid" id="rankings"></div>
+
+  <h2>Alle Unterk&uuml;nfte im Detail</h2>
+  <div id="hotel-cards"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>Erstellt am 30.03.2026 &middot; Preise inkl. Steuern &amp; Geb&uuml;hren &middot; Preise k&ouml;nnen sich &auml;ndern</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../shared/helpers.js"></script>
+<script src="../shared/nav.js"></script>
+<script src="hotels.js"></script>
+<script>
+// ─── Helpers ───
+function pricePPN(h) { return (h.totalPrice / h.nights / h.persons).toFixed(2); }
+function ratingClass(h) {
+  const r = h.ratingScale === 5 ? h.rating * 2 : h.rating;
+  if (r >= 8.5) return 'great'; if (r >= 7.5) return 'gold'; if (r >= 7) return 'ok'; return 'ok';
+}
+function ratingDisplay(h) { return h.ratingScale === 5 ? h.rating + '/5' : h.rating.toFixed(1); }
+function cancelClass(h) {
+  if (h.cancellation.free) return 'storno-ja';
+  if (h.cancellation.partial) return 'storno-teil';
+  return 'storno-nein';
+}
+function cancelShort(h) {
+  if (h.cancellation.free) return h.cancellation.note;
+  if (h.cancellation.partial) return 'Teilw.';
+  return 'Nein';
+}
+
+// ─── Map ───
+let map;
+function initMap() {
+  if (map) map.remove();
+  map = L.map('map').setView([38.145, 13.30], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap', maxZoom: 18
+  }).addTo(map);
+
+  HOTELS.forEach(h => {
+    if (!h.mapLat || !h.mapLng) return;
+    const icon = L.divIcon({
+      className: '',
+      html: '<div class="custom-marker" style="background:' + h.colors.marker + '">' + h.id + '</div>',
+      iconSize: [30,30], iconAnchor: [15,15], popupAnchor: [0,-18]
+    });
+    L.marker([h.mapLat, h.mapLng], { icon })
+      .addTo(map)
+      .bindPopup('<div style="font-family:Inter,sans-serif;min-width:200px">' +
+        '<strong>' + h.id + '. ' + esc(h.name) + '</strong><br>' +
+        '<span style="color:#666">' + esc(h.location) + '</span><br>' +
+        '<span style="color:#888;font-size:.85em">' + fmt(h.dateFrom) + ' - ' + fmt(h.dateTo) + '</span><br>' +
+        '<strong style="color:#27ae60;font-size:1.2em">' + h.totalPrice + ' Euro</strong>' +
+      '</div>');
+  });
+}
+
+// ─── Legend ───
+function renderLegend() {
+  const locs = [...new Set(HOTELS.map(h => h.location.split('(')[0].trim()))];
+  document.getElementById('map-legend').innerHTML =
+    '<span><strong>Legende:</strong> Nummern = Unterk\u00FCnfte</span>' +
+    locs.map(l => '<span>' + esc(l) + '</span>').join('');
+}
+
+// ─── Comparison Tables ───
+function renderTables() {
+  const groups = {};
+  HOTELS.forEach(h => {
+    const key = h.dateFrom + '_' + h.dateTo;
+    (groups[key] = groups[key] || []).push(h);
+  });
+
+  let html = '';
+  Object.keys(groups).sort().forEach(key => {
+    const list = groups[key].sort((a,b) => a.totalPrice - b.totalPrice);
+    const h0 = list[0];
+    const label = fmt(h0.dateFrom) + ' - ' + fmt(h0.dateTo) + ' (' + h0.nights + ' N\u00E4chte)';
+    html += '<h3>' + label + '</h3>';
+    html += '<div class="table-wrapper"><table class="comparison-table"><thead><tr>' +
+      '<th>#</th><th>Name</th><th>Ort</th><th>Preis</th><th>\u20AC/P./N.</th><th>Bewertung</th><th>m\u00B2</th><th>SZ</th><th>Strand</th><th>Palermo</th><th>Storno</th><th>Link</th>' +
+    '</tr></thead><tbody>';
+    list.forEach(h => {
+      const ppn = pricePPN(h);
+      const rCls = (h.ratingScale===5 ? h.rating*2 : h.rating) >= 8 ? 'rt-good' : (h.ratingScale===5 ? h.rating*2 : h.rating) >= 7 ? 'rt-ok' : 'rt-low';
+      html += '<tr>' +
+        '<td><span class="marker-num" style="background:' + h.colors.marker + '">' + h.id + '</span></td>' +
+        '<td><strong>' + esc(h.name) + '</strong>' + (h.selectedBy ? ' <em>(' + esc(h.selectedBy) + ')</em>':'') + '</td>' +
+        '<td>' + esc(h.location.split('(')[0].trim()) + '</td>' +
+        '<td class="price-hl">' + h.totalPrice + '</td>' +
+        '<td>' + ppn + '</td>' +
+        '<td class="' + rCls + '">' + ratingDisplay(h) + ' <small>(' + h.ratingCount + ')</small></td>' +
+        '<td>' + (h.sqm || '-') + '</td>' +
+        '<td>' + (h.bedrooms || '-') + '</td>' +
+        '<td>' + (h.distances.strand || '-') + '</td>' +
+        '<td>' + (h.distances.palermo || '-') + '</td>' +
+        '<td class="' + cancelClass(h) + '">' + cancelShort(h) + '</td>' +
+        '<td><a href="' + esc(h.link) + '" target="_blank">' + esc(h.platform) + '</a></td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  document.getElementById('comparison-tables').innerHTML = html;
+}
+
+// ─── Rankings ───
+function renderRankings() {
+  const sorted = [...HOTELS];
+  function rl(items, labelFn) {
+    return '<ol class="ranking-list">' + items.map((h,i) =>
+      '<li' + (i===0?' class="winner"':'') + '><span><span class="rank-num">' + (i+1) + '.</span> ' + esc(h.name) + '</span><strong>' + labelFn(h) + '</strong></li>'
+    ).join('') + '</ol>';
+  }
+
+  const byPPN = sorted.sort((a,b) => pricePPN(a)-pricePPN(b)).slice(0,5);
+  const byRating = sorted.filter(h=>h.ratingCount>=10).sort((a,b) => {
+    const ra = a.ratingScale===5?a.rating*2:a.rating, rb = b.ratingScale===5?b.rating*2:b.rating;
+    return rb-ra;
+  }).slice(0,5);
+  const bySqm = sorted.filter(h=>h.sqm).sort((a,b)=>b.sqm-a.sqm).slice(0,5);
+
+  document.getElementById('rankings').innerHTML =
+    '<div class="ranking-card"><h3>Preis-Leistung (\u20AC/Person/Nacht)</h3>' + rl(byPPN, h => pricePPN(h) + ' \u20AC') + '</div>' +
+    '<div class="ranking-card"><h3>Bewertung (mind. 10 Reviews)</h3>' + rl(byRating, h => ratingDisplay(h)) + '</div>' +
+    '<div class="ranking-card"><h3>Gr\u00F6\u00DFe (m\u00B2)</h3>' + rl(bySqm, h => h.sqm + ' m\u00B2') + '</div>' +
+    '<div class="ranking-card"><h3>Gesamtsieger</h3><ol class="ranking-list">' +
+      '<li class="winner"><span>\u2605 Bestes P/L: <strong>' + esc(byPPN[0].name) + '</strong></span></li>' +
+      '<li><span>\u2605 Beste Bewertung: <strong>' + esc(byRating[0].name) + '</strong></span></li>' +
+      '<li><span>\u2605 Meister Platz: <strong>' + esc(bySqm[0].name) + '</strong></span></li>' +
+    '</ol></div>';
+}
+
+// ─── Hotel Cards ───
+function renderCards() {
+  let html = '';
+  HOTELS.forEach(h => {
+    const ppn = pricePPN(h);
+    const isAirbnb = h.platform === 'Airbnb';
+    const titleColor = h.colors.titleDark ? 'color:#333' : 'color:#fff';
+    const subColor = h.colors.titleDark ? 'color:#555' : '';
+
+    html += '<div class="hotel-card" id="hotel-' + h.id + '">';
+
+    // Header
+    html += '<div class="hotel-header" style="background:' + h.colors.header + '">' +
+      '<div class="hotel-num" style="background:' + h.colors.num + '">' + h.id + '</div>' +
+      '<div class="hotel-title-block">' +
+        '<h3 style="' + titleColor + '">' + esc(h.name) + '</h3>' +
+        '<div class="subtitle" style="' + subColor + '">' + esc(h.type) + ' - ' + esc(h.location) + ' - ' + esc(h.platform) + (h.selectedBy?' - <em>von ' + esc(h.selectedBy) + '</em>':'') + '</div>' +
+      '</div>' +
+      '<div class="hotel-price-badge"' + (h.colors.titleDark?' style="color:#333"':'') + '>' + h.totalPrice + ' Euro<small' + (h.colors.titleDark?' style="color:#555"':'') + '>' + h.nights + ' N\u00E4chte gesamt</small></div>' +
+    '</div>';
+
+    // Availability bar
+    html += '<div class="avail-bar' + (isAirbnb?' airbnb':'') + '">' +
+      '<div class="avail-item"><span class="avail-val">' + fmt(h.dateFrom) + ' - ' + fmt(h.dateTo) + '</span></div>' +
+      '<div class="avail-item"><span class="avail-label">N\u00E4chte:</span><span class="avail-val">' + h.nights + '</span></div>' +
+      '<div class="avail-item"><span class="avail-label">Personen:</span><span class="avail-val">' + h.persons + '</span></div>' +
+      '<div class="avail-item"><span class="avail-label">Pro Pers./Nacht:</span><span class="avail-val ' + (ppn<25?'cheap':'expensive') + '">' + ppn + ' Euro</span></div>' +
+      (h.link ? '<div class="avail-link"><a href="' + esc(h.link) + '" target="_blank" class="' + (isAirbnb?'airbnb-btn':'') + '">Auf ' + esc(h.platform) + ' ansehen</a></div>' : '') +
+    '</div>';
+
+    // Body
+    html += '<div class="hotel-body">';
+
+    // Rating
+    html += '<div class="rating-bar">' +
+      '<span class="rating-score ' + ratingClass(h) + '">' + ratingDisplay(h) + '</span>' +
+      '<span class="rating-text">' + h.ratingCount + ' Bewertungen</span>' +
+    '</div>';
+
+    // Tags
+    html += '<div class="tags">';
+    if (h.sqm) html += '<span class="tag">' + h.sqm + ' m\u00B2</span>';
+    if (h.bedrooms) html += '<span class="tag">' + h.bedrooms + ' Schlafzimmer</span>';
+    if (h.bathrooms) html += '<span class="tag">' + h.bathrooms + ' Bad' + (h.bathrooms>1?'er':'') + '</span>';
+    h.features.forEach(f => {
+      let cls = 'tag';
+      if (f.includes('Gratis') || f.includes('kostenlos') || f.includes('Self-Check') || f.includes('24h')) cls += ' green';
+      if (f.includes('Nicht') || f.includes('Kein') || f.includes('Buchungsanfrage')) cls += ' red';
+      if (f.includes('!')) cls += ' highlight';
+      html += '<span class="' + cls + '">' + esc(f) + '</span>';
+    });
+    if (h.parking) html += '<span class="tag green highlight">' + esc(h.parking) + '</span>';
+    if (h.booking) html += '<span class="tag red">' + esc(h.booking) + '</span>';
+    html += '</div>';
+
+    // Info grid
+    html += '<div class="info-grid">';
+    if (h.address) html += '<div class="info-item"><span class="info-label">Adresse</span><span class="info-value">' + esc(h.address) + '</span></div>';
+    html += '<div class="info-item"><span class="info-label">Betten</span><span class="info-value">' + esc(h.beds) + '</span></div>';
+    html += '<div class="info-item"><span class="info-label">Check-in</span><span class="info-value">' + esc(h.checkin) + '</span></div>';
+    html += '<div class="info-item"><span class="info-label">Check-out</span><span class="info-value">' + esc(h.checkout) + '</span></div>';
+    const cCls = h.cancellation.free ? 'good' : h.cancellation.partial ? 'warn' : 'bad';
+    html += '<div class="info-item"><span class="info-label">Stornierung</span><span class="info-value ' + cCls + '">' + esc(h.cancellation.note) + '</span></div>';
+    if (h.host) html += '<div class="info-item"><span class="info-label">Gastgeber</span><span class="info-value">' + esc(h.host) + '</span></div>';
+    html += '</div>';
+
+    // Distances
+    html += '<hr class="section-divider"><h3>Entfernungen</h3><div class="distances-mini">';
+    Object.entries(h.distances).forEach(([k,v]) => {
+      const labels = {palermo:'Palermo Zentrum',strand:'Strand',bahnhof:'Bahnhof',flughafen:'Flughafen'};
+      html += '<div class="dist-item"><span>' + (labels[k]||k) + '</span><span class="dist-val">' + esc(v) + '</span></div>';
+    });
+    html += '</div>';
+
+    // Pros / Cons
+    if (h.pros.length || h.cons.length) {
+      html += '<div class="pros-cons">';
+      if (h.pros.length) { html += '<div class="pros"><h4>Vorteile</h4><ul>' + h.pros.map(p=>'<li>' + esc(p) + '</li>').join('') + '</ul></div>'; }
+      if (h.cons.length) { html += '<div class="cons"><h4>Nachteile</h4><ul>' + h.cons.map(c=>'<li>' + esc(c) + '</li>').join('') + '</ul></div>'; }
+      html += '</div>';
+    }
+
+    // Quotes
+    h.quotes.forEach(q => {
+      html += '<div class="quote">"' + esc(q.text) + '" <span class="author">- ' + esc(q.author) + '</span></div>';
+    });
+
+    // Photos
+    if (h.photos && h.photos.length) {
+      html += '<details class="photos-toggle"><summary>Fotos &amp; Bilder ansehen</summary><div class="photos-grid">';
+      h.photos.forEach(p => {
+        html += '<div class="photo-card"><div class="photo-icon">' + p.icon + '</div><div class="photo-desc">' + esc(p.desc) + '</div></div>';
+      });
+      html += '</div>';
+      if (h.link) html += '<a class="photo-link" href="' + esc(h.link) + '" target="_blank">Alle ' + h.photoCount + ' Fotos auf ' + esc(h.platform) + ' ansehen</a>';
+      html += '</details>';
+    }
+
+    html += '</div></div>';
+  });
+  document.getElementById('hotel-cards').innerHTML = html;
+}
+
+// ─── Render All ───
+function renderAll() {
+  initMap();
+  renderLegend();
+  renderTables();
+  renderRankings();
+  renderCards();
+}
+
+renderAll();
+</script>
+</body>
+</html>

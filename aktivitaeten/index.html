@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aktivit&auml;ten - Sizilien 2026</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1" data-title=""></div>
+
+<header>
+  <h1>Aktivit&auml;ten</h1>
+  <p>Sehensw&uuml;rdigkeiten, Str&auml;nde, Restaurants &amp; Ausfl&uuml;ge</p>
+</header>
+
+<div class="container">
+
+  <h2>Karte</h2>
+  <div id="akt-map"></div>
+
+  <h2>Alle Aktivit&auml;ten</h2>
+
+  <div class="filter-bar" id="filter-bar"></div>
+
+  <div class="aktivitaeten-grid" id="akt-grid"></div>
+
+  <h2>Aktivit&auml;t hinzuf&uuml;gen</h2>
+  <div class="add-form">
+    <h3>Neue Aktivit&auml;t eintragen</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Name <span class="required">*</span></label><input id="f-name" placeholder="z.B. Kathedrale von Palermo"></div>
+      <div class="form-group"><label>Kategorie *</label>
+        <select id="f-kategorie">
+          <option value="sehenswuerdigkeit">Sehensw&uuml;rdigkeit</option>
+          <option value="strand">Strand</option>
+          <option value="restaurant">Restaurant / Essen</option>
+          <option value="ausflug">Ausflug</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ort</label><input id="f-ort" placeholder="z.B. Palermo Zentrum"></div>
+      <div class="form-group"><label>Kosten</label><input id="f-kosten" placeholder="z.B. Kostenlos, 10&euro;"></div>
+      <div class="form-group"><label>Dauer</label><input id="f-dauer" placeholder="z.B. 1-2 Stunden"></div>
+      <div class="form-group"><label>Priorit&auml;t</label>
+        <select id="f-prio">
+          <option value="must-do">Must-Do</option>
+          <option value="nice-to-have">Nice-to-have</option>
+          <option value="vielleicht">Vielleicht</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Vorgeschlagen von</label><input id="f-von" placeholder="z.B. Sebas"></div>
+      <div class="form-group"><label>Link</label><input id="f-link" type="url" placeholder="https://..."></div>
+      <div class="form-group"><label>Breitengrad</label><input id="f-lat" type="number" step="0.0001" placeholder="z.B. 38.12"></div>
+      <div class="form-group"><label>L&auml;ngengrad</label><input id="f-lng" type="number" step="0.0001" placeholder="z.B. 13.35"></div>
+      <div class="form-group full"><label>Beschreibung</label><textarea id="f-beschreibung" placeholder="Kurze Beschreibung der Aktivit&auml;t"></textarea></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addAkt()">Aktivit&auml;t hinzuf&uuml;gen</button>
+        <button class="btn btn-secondary" onclick="exportData()">Daten exportieren</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>Sizilien Urlaub Juni 2026</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../shared/helpers.js"></script>
+<script src="../shared/nav.js"></script>
+<script src="aktivitaeten.js"></script>
+<script>
+var currentFilter = 'alle';
+var aktMap;
+
+var katLabels = {
+  sehenswuerdigkeit: 'Sehensw\u00FCrdigkeit',
+  strand: 'Strand',
+  restaurant: 'Restaurant',
+  ausflug: 'Ausflug'
+};
+var katColors = {
+  sehenswuerdigkeit: '#e67e22',
+  strand: '#2980b9',
+  restaurant: '#c0392b',
+  ausflug: '#8e44ad'
+};
+var prioLabels = {
+  'must-do': 'Must-Do',
+  'nice-to-have': 'Nice-to-have',
+  'vielleicht': 'Vielleicht'
+};
+
+function initMap() {
+  if (aktMap) aktMap.remove();
+  aktMap = L.map('akt-map').setView([38.13, 13.35], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '\u00A9 OpenStreetMap', maxZoom: 18
+  }).addTo(aktMap);
+
+  AKTIVITAETEN.forEach(function(a) {
+    if (!a.mapLat || !a.mapLng) return;
+    var color = katColors[a.kategorie] || '#1a5276';
+    var icon = L.divIcon({
+      className: '',
+      html: '<div class="custom-marker" style="background:' + color + '">' + a.id + '</div>',
+      iconSize: [30,30], iconAnchor: [15,15], popupAnchor: [0,-18]
+    });
+    L.marker([a.mapLat, a.mapLng], { icon: icon })
+      .addTo(aktMap)
+      .bindPopup('<div style="font-family:Inter,sans-serif;min-width:180px">' +
+        '<strong>' + esc(a.name) + '</strong><br>' +
+        '<span style="color:#666">' + esc(a.ort) + '</span><br>' +
+        '<span style="color:#888;font-size:.85em">' + esc(a.kosten) + ' &middot; ' + esc(a.dauer) + '</span>' +
+      '</div>');
+  });
+}
+
+function renderFilterBar() {
+  var counts = { alle: AKTIVITAETEN.length };
+  AKTIVITAETEN.forEach(function(a) { counts[a.kategorie] = (counts[a.kategorie] || 0) + 1; });
+  var filters = [
+    { key: 'alle', label: 'Alle' },
+    { key: 'sehenswuerdigkeit', label: 'Sehensw\u00FCrdigkeiten' },
+    { key: 'strand', label: 'Str\u00E4nde' },
+    { key: 'restaurant', label: 'Restaurants' },
+    { key: 'ausflug', label: 'Ausfl\u00FCge' }
+  ];
+  document.getElementById('filter-bar').innerHTML = filters.map(function(f) {
+    var c = counts[f.key] || 0;
+    return '<button class="filter-btn' + (currentFilter === f.key ? ' active' : '') + '" onclick="filterBy(\'' + f.key + '\')" title="' + f.label + ' anzeigen">' + f.label + ' (' + c + ')</button>';
+  }).join('');
+}
+
+function filterBy(kat) {
+  currentFilter = kat;
+  renderFilterBar();
+  renderCards();
+}
+
+function renderCards() {
+  var filtered = currentFilter === 'alle' ? AKTIVITAETEN : AKTIVITAETEN.filter(function(a) { return a.kategorie === currentFilter; });
+
+  if (filtered.length === 0) {
+    document.getElementById('akt-grid').innerHTML = '<div class="empty-state"><div class="icon">&#128506;&#65039;</div><h3>Keine Aktivit\u00E4ten in dieser Kategorie</h3></div>';
+    return;
+  }
+
+  document.getElementById('akt-grid').innerHTML = filtered.map(function(a) {
+    return '<div class="akt-card">' +
+      '<div class="akt-card-header">' +
+        '<h3>' + esc(a.name) + '</h3>' +
+        '<div class="akt-meta">' +
+          '<span>' + esc(a.ort) + '</span>' +
+          '<span>' + esc(a.kosten) + '</span>' +
+          '<span>' + esc(a.dauer) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="akt-card-body">' +
+        '<p>' + esc(a.beschreibung) + '</p>' +
+        '<div class="akt-footer">' +
+          '<div>' +
+            '<span class="kategorie-badge kat-' + a.kategorie + '">' + katLabels[a.kategorie] + '</span> ' +
+            '<span class="priority-badge priority-' + a.prioritaet + '">' + prioLabels[a.prioritaet] + '</span>' +
+          '</div>' +
+          (a.vorgeschlagenVon ? '<span style="font-size:.82em;color:var(--text-light)">von ' + esc(a.vorgeschlagenVon) + '</span>' : '') +
+          (a.link ? '<a href="' + esc(a.link) + '" target="_blank" style="font-size:.85em">Mehr &rarr;</a>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function addAkt() {
+  clearValidation();
+  if (!validateRequired('f-name', 'Bitte einen Namen eingeben')) { toast('Bitte Pflichtfelder ausf\u00FCllen', 'error'); return; }
+  var name = document.getElementById('f-name').value.trim();
+
+  AKTIVITAETEN.push({
+    id: AKTIVITAETEN.length + 1,
+    name: name,
+    kategorie: document.getElementById('f-kategorie').value,
+    ort: document.getElementById('f-ort').value.trim(),
+    kosten: document.getElementById('f-kosten').value.trim() || '-',
+    dauer: document.getElementById('f-dauer').value.trim() || '-',
+    beschreibung: document.getElementById('f-beschreibung').value.trim(),
+    link: document.getElementById('f-link').value.trim(),
+    vorgeschlagenVon: document.getElementById('f-von').value.trim(),
+    prioritaet: document.getElementById('f-prio').value,
+    mapLat: parseFloat(document.getElementById('f-lat').value) || null,
+    mapLng: parseFloat(document.getElementById('f-lng').value) || null
+  });
+
+  renderFilterBar();
+  renderCards();
+  initMap();
+  toast('"' + name + '" hinzugef\u00FCgt!');
+}
+
+function exportData() {
+  var json = JSON.stringify(AKTIVITAETEN, null, 2);
+  var blob = new Blob(['const AKTIVITAETEN = ' + json + ';\n'], { type: 'application/javascript' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aktivitaeten.js';
+  a.click();
+  toast('aktivitaeten.js exportiert!');
+}
+
+initMap();
+renderFilterBar();
+renderCards();
+</script>
+</body>
+</html>

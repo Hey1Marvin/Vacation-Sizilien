@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fl&uuml;ge - Sizilien 2026</title>
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1" data-title=""></div>
+
+<header>
+  <h1>Fl&uuml;ge</h1>
+  <p>Flugvergleich &amp; Buchungsstatus &middot; Palermo (PMO)</p>
+</header>
+
+<div class="container">
+
+  <div class="info-box">
+    <strong>Zielflughafen:</strong> Palermo Falcone-Borsellino (PMO) &middot;
+    <strong>Reisezeitraum:</strong> ca. 01.06. - 14.06.2026 &middot;
+    <strong>Personen:</strong> 5
+  </div>
+
+  <h2>Flug&uuml;bersicht</h2>
+
+  <div class="flight-summary">
+    <div class="flight-summary-card">
+      <h3>&#9992;&#65039; Hinfl&uuml;ge</h3>
+      <div class="big-num" id="hin-count">0</div>
+      <span style="color:var(--text-light)" id="hin-cheapest">Optionen eingetragen</span>
+    </div>
+    <div class="flight-summary-card">
+      <h3>&#9992;&#65039; R&uuml;ckfl&uuml;ge</h3>
+      <div class="big-num" id="rueck-count">0</div>
+      <span style="color:var(--text-light)" id="rueck-cheapest">Optionen eingetragen</span>
+    </div>
+  </div>
+
+  <h2>Hinfl&uuml;ge</h2>
+  <div id="hin-flights"></div>
+
+  <h2>R&uuml;ckfl&uuml;ge</h2>
+  <div id="rueck-flights"></div>
+
+  <h2 id="flug-form">Flug hinzuf&uuml;gen</h2>
+  <div class="add-form">
+    <h3>Neuen Flug eintragen</h3>
+    <div class="form-grid">
+      <div class="form-group"><label>Person <span class="required">*</span></label><input id="f-person" placeholder="z.B. Sebas"></div>
+      <div class="form-group"><label>Richtung <span class="required">*</span></label>
+        <select id="f-richtung"><option value="hin">Hinflug</option><option value="rueck">R&uuml;ckflug</option></select>
+      </div>
+      <div class="form-group"><label>Airline</label><input id="f-airline" placeholder="z.B. Ryanair, Eurowings"></div>
+      <div class="form-group"><label>Flugnummer</label><input id="f-flugNr" placeholder="z.B. FR1234"></div>
+      <div class="form-group"><label>Von <span class="required">*</span></label><input id="f-von" placeholder="z.B. Berlin (BER)"></div>
+      <div class="form-group"><label>Nach <span class="required">*</span></label><input id="f-nach" value="Palermo (PMO)" placeholder="z.B. Palermo (PMO)"></div>
+      <div class="form-group"><label>Datum <span class="required">*</span></label><input id="f-datum" type="date"></div>
+      <div class="form-group"><label>Abflugzeit</label><input id="f-abflug" type="time"></div>
+      <div class="form-group"><label>Ankunftszeit</label><input id="f-ankunft" type="time"></div>
+      <div class="form-group"><label>Flugdauer</label><input id="f-dauer" placeholder="z.B. 2h 30m"></div>
+      <div class="form-group"><label>Umsteigen</label><input id="f-umsteigen" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Preis (&euro;) <span class="required">*</span></label><input id="f-preis" type="number" placeholder="z.B. 89"></div>
+      <div class="form-group"><label>Link zur Buchung</label><input id="f-link" type="url" placeholder="https://..."></div>
+      <div class="form-group"><label>Status</label>
+        <select id="f-status"><option value="option">Option</option><option value="gebucht">Gebucht</option><option value="offen">Noch offen</option></select>
+      </div>
+      <div class="form-group full"><label>Notizen</label><input id="f-notizen" placeholder="z.B. Nur Handgep&auml;ck, fr&uuml;h am Flughafen sein"></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addFlug()">Flug hinzuf&uuml;gen</button>
+        <button class="btn btn-secondary" onclick="clearForm()">Formular leeren</button>
+        <button class="btn btn-secondary" onclick="exportData()">Daten exportieren</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>Sizilien Urlaub Juni 2026</footer>
+
+<script src="../shared/helpers.js"></script>
+<script src="../shared/nav.js"></script>
+<script src="fluege.js"></script>
+<script>
+function renderFlights() {
+  var hin = FLUEGE.filter(function(f) { return f.richtung === 'hin'; });
+  var rueck = FLUEGE.filter(function(f) { return f.richtung === 'rueck'; });
+
+  document.getElementById('hin-count').textContent = hin.length;
+  document.getElementById('rueck-count').textContent = rueck.length;
+
+  var hinMin = hin.length ? Math.min.apply(null, hin.map(function(f) { return f.preis; })) : null;
+  var rueckMin = rueck.length ? Math.min.apply(null, rueck.map(function(f) { return f.preis; })) : null;
+  document.getElementById('hin-cheapest').textContent = hinMin !== null ? 'G\u00FCnstigster: ' + hinMin + ' \u20AC' : 'Optionen eingetragen';
+  document.getElementById('rueck-cheapest').textContent = rueckMin !== null ? 'G\u00FCnstigster: ' + rueckMin + ' \u20AC' : 'Optionen eingetragen';
+
+  document.getElementById('hin-flights').innerHTML = hin.length ? renderList(hin) :
+    '<div class="empty-state"><div class="icon">&#9992;&#65039;</div><h3>Noch keine Hinfl&uuml;ge</h3><p>F&uuml;ge unten den ersten Hinflug hinzu</p><a href="#flug-form" class="btn btn-primary btn-sm">+ Flug hinzuf&uuml;gen</a></div>';
+
+  document.getElementById('rueck-flights').innerHTML = rueck.length ? renderList(rueck) :
+    '<div class="empty-state"><div class="icon">&#9992;&#65039;</div><h3>Noch keine R&uuml;ckfl&uuml;ge</h3><p>F&uuml;ge unten den ersten R&uuml;ckflug hinzu</p><a href="#flug-form" class="btn btn-primary btn-sm">+ Flug hinzuf&uuml;gen</a></div>';
+}
+
+function renderList(flights) {
+  return flights.sort(function(a,b) { return a.preis - b.preis; }).map(function(f) {
+    var statusCls = 'status status-' + f.status;
+    var statusLabel = f.status === 'gebucht' ? 'Gebucht' : f.status === 'option' ? 'Option' : 'Offen';
+    return '<div class="flight-card">' +
+      '<div class="flight-route">' +
+        '<div class="airports">' + esc(f.von) + '<span class="arrow"> &rarr; </span>' + esc(f.nach) + '</div>' +
+        '<div class="details">' +
+          '<strong>' + esc(f.person) + '</strong>' +
+          (f.airline ? ' &middot; ' + esc(f.airline) : '') +
+          (f.flugNr ? ' ' + esc(f.flugNr) : '') +
+          ' &middot; ' + fmt(f.datum) +
+          (f.abflug ? ' &middot; ' + f.abflug + (f.ankunft ? ' - ' + f.ankunft : '') : '') +
+          (f.dauer ? ' (' + esc(f.dauer) + ')' : '') +
+          (f.umsteigen > 0 ? ' &middot; ' + f.umsteigen + 'x Umsteigen' : ' &middot; Direkt') +
+        '</div>' +
+        (f.notizen ? '<div class="details" style="margin-top:4px;font-style:italic">' + esc(f.notizen) + '</div>' : '') +
+      '</div>' +
+      '<span class="' + statusCls + '">' + statusLabel + '</span>' +
+      '<div class="flight-price">' + f.preis + ' &euro;</div>' +
+      (f.link ? '<a href="' + esc(f.link) + '" target="_blank" class="btn btn-primary" style="padding:6px 14px;font-size:.82em">Buchen</a>' : '') +
+    '</div>';
+  }).join('');
+}
+
+function addFlug() {
+  clearValidation();
+  var ok = true;
+  ok = validateRequired('f-person', 'Person ist erforderlich') & ok;
+  ok = validateRequired('f-von', 'Abflugort ist erforderlich') & ok;
+  ok = validateRequired('f-nach', 'Zielort ist erforderlich') & ok;
+  ok = validateRequired('f-datum', 'Datum ist erforderlich') & ok;
+  ok = validateRequired('f-preis', 'Preis ist erforderlich') & ok;
+
+  if (!ok) {
+    toast('Bitte Pflichtfelder ausf\u00FCllen', 'error');
+    return;
+  }
+
+  var person = document.getElementById('f-person').value.trim();
+  var von = document.getElementById('f-von').value.trim();
+  var nach = document.getElementById('f-nach').value.trim();
+  var datum = document.getElementById('f-datum').value;
+  var preis = parseFloat(document.getElementById('f-preis').value);
+
+  FLUEGE.push({
+    id: FLUEGE.length + 1,
+    person: person,
+    richtung: document.getElementById('f-richtung').value,
+    airline: document.getElementById('f-airline').value.trim(),
+    flugNr: document.getElementById('f-flugNr').value.trim(),
+    von: von,
+    nach: nach,
+    datum: datum,
+    abflug: document.getElementById('f-abflug').value,
+    ankunft: document.getElementById('f-ankunft').value,
+    dauer: document.getElementById('f-dauer').value.trim(),
+    umsteigen: parseInt(document.getElementById('f-umsteigen').value) || 0,
+    preis: preis,
+    link: document.getElementById('f-link').value.trim(),
+    status: document.getElementById('f-status').value,
+    notizen: document.getElementById('f-notizen').value.trim()
+  });
+
+  renderFlights();
+  clearForm();
+  toast('Flug hinzugef\u00FCgt!');
+}
+
+function clearForm() {
+  document.querySelectorAll('.add-form input').forEach(function(el) {
+    if (el.id === 'f-nach') { el.value = 'Palermo (PMO)'; return; }
+    if (el.id === 'f-umsteigen') { el.value = '0'; return; }
+    el.value = '';
+  });
+}
+
+function exportData() {
+  var json = JSON.stringify(FLUEGE, null, 2);
+  var blob = new Blob(['const FLUEGE = ' + json + ';\n'], { type: 'application/javascript' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fluege.js';
+  a.click();
+  toast('fluege.js exportiert!');
+}
+
+renderFlights();
+</script>
+</body>
+</html>

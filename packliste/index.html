@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Packliste - Sizilien 2026</title>
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1" data-title=""></div>
+
+<header>
+  <h1>Packliste</h1>
+  <p>Gemeinsame &amp; pers&ouml;nliche Checkliste &middot; Sizilien Juni 2026</p>
+</header>
+
+<div class="container">
+
+  <div class="total-progress" id="total-progress"></div>
+
+  <h2>Gemeinsame Sachen</h2>
+  <p style="color:var(--text-light);margin-bottom:15px;font-size:.9em">Sachen, die die Gruppe zusammen braucht &mdash; Zust&auml;ndigkeit festlegen!</p>
+  <div id="gemeinsam-list"></div>
+
+  <h2>Pers&ouml;nliche Packliste</h2>
+  <p style="color:var(--text-light);margin-bottom:15px;font-size:.9em">Dein Fortschritt wird im Browser gespeichert (localStorage).</p>
+  <div id="persoenlich-list"></div>
+
+  <div class="reset-btn">
+    <button class="btn btn-danger" onclick="resetAll()">Alle Haken zur&uuml;cksetzen</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>Sizilien Urlaub Juni 2026</footer>
+
+<script src="../shared/helpers.js"></script>
+<script src="../shared/nav.js"></script>
+<script src="packliste.js"></script>
+<script>
+var STORAGE_KEY = 'sizilien2026_packliste';
+
+function toggleSection(el) {
+  var items = el.parentElement.querySelector('.checklist-items');
+  var chevron = el.querySelector('.chevron');
+  if (!items) return;
+  var isHidden = items.style.display === 'none';
+  items.style.display = isHidden ? 'block' : 'none';
+  if (chevron) chevron.textContent = isHidden ? '\u25BC' : '\u25B2';
+}
+
+function loadState() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  } catch(e) { return {}; }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function toggleItem(key) {
+  var state = loadState();
+  state[key] = !state[key];
+  saveState(state);
+  renderAll();
+}
+
+function renderGemeinsam() {
+  var state = loadState();
+  var checked = 0;
+  var total = PACKLISTE_GEMEINSAM.length;
+
+  var items = PACKLISTE_GEMEINSAM.map(function(g) {
+    var isChecked = !!state[g.id];
+    if (isChecked) checked++;
+    return '<div class="check-item' + (isChecked ? ' checked' : '') + '">' +
+      '<input type="checkbox" id="' + g.id + '"' + (isChecked ? ' checked' : '') +
+      ' onchange="toggleItem(\'' + g.id + '\')">' +
+      '<label for="' + g.id + '">' + esc(g.item) + '</label>' +
+      (g.zustaendig ? '<span class="zustaendig">' + esc(g.zustaendig) + '</span>' : '<span class="zustaendig" style="color:var(--accent)">Noch offen</span>') +
+    '</div>';
+  }).join('');
+
+  var pct = total > 0 ? Math.round(checked / total * 100) : 0;
+  document.getElementById('gemeinsam-list').innerHTML =
+    '<div class="checklist-section">' +
+      '<div class="checklist-header" onclick="toggleSection(this)">' +
+        '<h3>&#128230; Gemeinsame Items <span class="chevron" style="float:right;font-size:.8em">\u25BC</span></h3>' +
+        '<span class="progress-text">' + checked + '/' + total + ' (' + pct + '%)</span>' +
+      '</div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="checklist-items">' + items + '</div>' +
+    '</div>';
+}
+
+function renderPersoenlich() {
+  var state = loadState();
+
+  document.getElementById('persoenlich-list').innerHTML = PACKLISTE_KATEGORIEN.map(function(kat) {
+    var checked = 0;
+    var total = kat.items.length;
+
+    var items = kat.items.map(function(item, i) {
+      var key = kat.id + '_' + i;
+      var isChecked = !!state[key];
+      if (isChecked) checked++;
+      return '<div class="check-item' + (isChecked ? ' checked' : '') + '">' +
+        '<input type="checkbox" id="' + key + '"' + (isChecked ? ' checked' : '') +
+        ' onchange="toggleItem(\'' + key + '\')">' +
+        '<label for="' + key + '">' + esc(item) + '</label>' +
+      '</div>';
+    }).join('');
+
+    var pct = total > 0 ? Math.round(checked / total * 100) : 0;
+
+    return '<div class="checklist-section">' +
+      '<div class="checklist-header" onclick="toggleSection(this)">' +
+        '<h3>' + kat.icon + ' ' + esc(kat.name) + ' <span class="chevron" style="float:right;font-size:.8em">\u25BC</span></h3>' +
+        '<span class="progress-text">' + checked + '/' + total + ' (' + pct + '%)</span>' +
+      '</div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="checklist-items">' + items + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderTotalProgress() {
+  var state = loadState();
+  var total = PACKLISTE_GEMEINSAM.length;
+  PACKLISTE_KATEGORIEN.forEach(function(k) { total += k.items.length; });
+
+  var checked = 0;
+  PACKLISTE_GEMEINSAM.forEach(function(g) { if (state[g.id]) checked++; });
+  PACKLISTE_KATEGORIEN.forEach(function(k) {
+    k.items.forEach(function(item, i) {
+      if (state[k.id + '_' + i]) checked++;
+    });
+  });
+
+  var pct = total > 0 ? Math.round(checked / total * 100) : 0;
+  document.getElementById('total-progress').innerHTML =
+    '<div style="font-size:.9em;color:var(--text-light);margin-bottom:5px">Gesamtfortschritt</div>' +
+    '<div class="big-num">' + pct + '%</div>' +
+    '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+    '<div style="font-size:.85em;color:var(--text-light)">' + checked + ' von ' + total + ' Items abgehakt</div>';
+}
+
+function renderAll() {
+  renderTotalProgress();
+  renderGemeinsam();
+  renderPersoenlich();
+}
+
+function resetAll() {
+  if (confirm('Wirklich alle Haken zur\u00FCcksetzen?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderAll();
+    toast('Packliste zur\u00FCckgesetzt');
+  }
+}
+
+renderAll();
+</script>
+</body>
+</html>
