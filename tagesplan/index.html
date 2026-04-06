@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tagesplan - Sizilien 2026</title>
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1" data-title=""></div>
+
+<header>
+  <h1>Tagesplan</h1>
+  <p>14 Tage Sizilien &middot; 1. &ndash; 14. Juni 2026 &middot; Tag f&uuml;r Tag planen</p>
+</header>
+
+<div class="container">
+
+  <!-- Mini Calendar -->
+  <div class="mini-calendar">
+    <h3>&#128197; Kalender&uuml;bersicht</h3>
+    <div class="mini-cal-grid" id="mini-cal"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="plan-stats" id="plan-stats"></div>
+
+  <!-- Global Actions -->
+  <div class="global-actions">
+    <div class="jump-to-day">
+      <select id="jump-select" aria-label="Zum Tag springen">
+        <option value="">Zum Tag springen&hellip;</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="expandAll()">Alle aufklappen</button>
+    <button class="btn btn-secondary" onclick="collapseAll()">Alle zuklappen</button>
+    <button class="btn btn-danger" onclick="resetAll()">Alle zur&uuml;cksetzen</button>
+  </div>
+
+  <!-- Day Cards -->
+  <div id="day-cards"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<footer>Sizilien Urlaub Juni 2026 &middot; Tagesplanung f&uuml;r 5 Personen</footer>
+
+<script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
+<script src="../shared/nav.js"></script>
+<script src="../aktivitaeten/aktivitaeten.js"></script>
+<script src="tagesplan.js"></script>
+<script>
+// ─── State ───
+var LS_KEY = 'sizilien2026_tagesplan';
+var tagesplan = loadPlan();
+var collapsedDays = {};
+
+var SLOT_KEYS = ['morgens', 'mittags', 'nachmittags', 'abends'];
+var SLOT_LABELS = {
+  morgens: 'Morgens',
+  mittags: 'Mittags',
+  nachmittags: 'Nachmittags',
+  abends: 'Abends'
+};
+var SLOT_ICONS = {
+  morgens: '\u2600\uFE0F',
+  mittags: '\u{1F31E}',
+  nachmittags: '\u{1F305}',
+  abends: '\u{1F319}'
+};
+var MEAL_KEYS = ['fruehstueck', 'mittagessen', 'abendessen'];
+var MEAL_LABELS = {
+  fruehstueck: 'Fr\u00FChst\u00FCck',
+  mittagessen: 'Mittagessen',
+  abendessen: 'Abendessen'
+};
+
+var DOW_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+// ─── Persistence ───
+function loadPlan() {
+  try {
+    var raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      // Ensure all 14 days exist (merge with defaults for missing fields)
+      return TAGESPLAN_DEFAULT.map(function(def, i) {
+        var saved = parsed[i];
+        if (!saved) return JSON.parse(JSON.stringify(def));
+        // Ensure mahlzeiten exists
+        if (!saved.mahlzeiten) {
+          saved.mahlzeiten = def.mahlzeiten ? JSON.parse(JSON.stringify(def.mahlzeiten)) : { fruehstueck: '', mittagessen: '', abendessen: '' };
+        }
+        return saved;
+      });
+    }
+  } catch (e) { /* ignore */ }
+  return JSON.parse(JSON.stringify(TAGESPLAN_DEFAULT));
+}
+
+function savePlan() {
+  localStorage.setItem(LS_KEY, JSON.stringify(tagesplan));
+}
+
+// ─── Helpers ───
+function dayHasContent(day) {
+  for (var k = 0; k < SLOT_KEYS.length; k++) {
+    var s = day.slots[SLOT_KEYS[k]];
+    if (s.aktivitaetId || s.freitext) return true;
+  }
+  if (day.mahlzeiten) {
+    for (var m = 0; m < MEAL_KEYS.length; m++) {
+      if (day.mahlzeiten[MEAL_KEYS[m]]) return true;
+    }
+  }
+  return false;
+}
+
+function countFilledSlots(day) {
+  var c = 0;
+  SLOT_KEYS.forEach(function(k) {
+    var s = day.slots[k];
+    if (s.aktivitaetId || s.freitext) c++;
+  });
+  return c;
+}
+
+function getAktById(id) {
+  return AKTIVITAETEN.find(function(a) { return a.id === id; }) || null;
+}
+
+function formatDateLong(dateStr) {
+  var d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function getDOW(dateStr) {
+  var d = new Date(dateStr + 'T12:00:00');
+  return DOW_SHORT[d.getDay()];
+}
+
+function getDayNum(dateStr) {
+  return new Date(dateStr + 'T12:00:00').getDate();
+}
+
+// ─── Build activity dropdown options ───
+function buildAktOptions(selectedId) {
+  var html = '<option value="">-- Aktivit\u00E4t w\u00E4hlen --</option>';
+  var groups = {};
+  AKTIVITAETEN.forEach(function(a) {
+    var kat = a.kategorie || 'sonstige';
+    if (!groups[kat]) groups[kat] = [];
+    groups[kat].push(a);
+  });
+  var katLabels = {
+    sehenswuerdigkeit: 'Sehensw\u00FCrdigkeiten',
+    strand: 'Str\u00E4nde',
+    restaurant: 'Restaurants & Essen',
+    ausflug: 'Ausfl\u00FCge',
+    sonstige: 'Sonstiges'
+  };
+  var order = ['sehenswuerdigkeit', 'strand', 'restaurant', 'ausflug', 'sonstige'];
+  order.forEach(function(kat) {
+    if (!groups[kat]) return;
+    html += '<optgroup label="' + (katLabels[kat] || kat) + '">';
+    groups[kat].forEach(function(a) {
+      var sel = (selectedId === a.id) ? ' selected' : '';
+      html += '<option value="' + a.id + '"' + sel + '>' + esc(a.name) + ' (' + esc(a.ort) + ')</option>';
+    });
+    html += '</optgroup>';
+  });
+  return html;
+}
+
+// ─── Render Mini Calendar ───
+function renderMiniCal() {
+  var html = '';
+  tagesplan.forEach(function(day, i) {
+    var hasPlan = dayHasContent(day);
+    var cls = hasPlan ? 'has-plan' : 'empty';
+    var dow = getDOW(day.datum);
+    var num = getDayNum(day.datum);
+    html += '<a href="#day-' + i + '" class="mini-cal-day ' + cls + '" title="' + esc(day.label) + ' \u2013 ' + formatDateLong(day.datum) + '">' +
+      '<span class="cal-num">' + num + '</span>' +
+      '<span class="cal-dow">' + dow + '</span>' +
+    '</a>';
+  });
+  document.getElementById('mini-cal').innerHTML = html;
+}
+
+// ─── Render Stats ───
+function renderStats() {
+  var planned = 0;
+  var totalSlots = 0;
+  var totalAkt = 0;
+  tagesplan.forEach(function(day) {
+    if (dayHasContent(day)) planned++;
+    SLOT_KEYS.forEach(function(k) {
+      var s = day.slots[k];
+      if (s.aktivitaetId || s.freitext) totalSlots++;
+      if (s.aktivitaetId) totalAkt++;
+    });
+  });
+  document.getElementById('plan-stats').innerHTML =
+    '<div class="plan-stat">' +
+      '<div class="plan-stat-icon">&#128197;</div>' +
+      '<div class="plan-stat-info"><h4>Tage geplant</h4><div class="plan-stat-val">' + planned + ' / 14</div></div>' +
+    '</div>' +
+    '<div class="plan-stat">' +
+      '<div class="plan-stat-icon">&#9201;</div>' +
+      '<div class="plan-stat-info"><h4>Zeitslots belegt</h4><div class="plan-stat-val">' + totalSlots + ' / 56</div></div>' +
+    '</div>' +
+    '<div class="plan-stat">' +
+      '<div class="plan-stat-icon">&#128205;</div>' +
+      '<div class="plan-stat-info"><h4>Aktivit\u00E4ten zugewiesen</h4><div class="plan-stat-val">' + totalAkt + '</div></div>' +
+    '</div>';
+}
+
+// ─── Render Jump Select ───
+function renderJumpSelect() {
+  var sel = document.getElementById('jump-select');
+  var html = '<option value="">Zum Tag springen\u2026</option>';
+  tagesplan.forEach(function(day, i) {
+    html += '<option value="day-' + i + '">' + esc(day.label) + ' \u2013 ' + formatDateLong(day.datum) + '</option>';
+  });
+  sel.innerHTML = html;
+  sel.onchange = function() {
+    if (sel.value) {
+      // uncollapse if collapsed
+      var idx = parseInt(sel.value.replace('day-', ''), 10);
+      collapsedDays[idx] = false;
+      renderDayCards();
+      var el = document.getElementById(sel.value);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      sel.value = '';
+    }
+  };
+}
+
+// ─── Render Day Cards ───
+function renderDayCards() {
+  var html = '';
+  tagesplan.forEach(function(day, dayIdx) {
+    var filled = countFilledSlots(day);
+    var isCollapsed = collapsedDays[dayIdx] === true;
+    var dateLong = formatDateLong(day.datum);
+
+    html += '<div class="day-card" id="day-' + dayIdx + '">';
+
+    // Header
+    html += '<div class="day-card-header" style="cursor:pointer" onclick="toggleDay(' + dayIdx + ')" title="Klicken zum Auf-/Zuklappen">';
+    html += '<h3>' + esc(day.label) + ' <span class="day-date">' + esc(dateLong) + '</span></h3>';
+    html += '<div style="display:flex;align-items:center;gap:10px">';
+    // Progress dots
+    html += '<div class="day-progress">';
+    SLOT_KEYS.forEach(function(k) {
+      var s = day.slots[k];
+      var isFilled = s.aktivitaetId || s.freitext;
+      html += '<div class="day-progress-dot' + (isFilled ? ' filled' : '') + '" title="' + SLOT_LABELS[k] + '"></div>';
+    });
+    html += '</div>';
+    html += '<span class="day-badge' + (filled > 0 ? ' filled' : '') + '">' + filled + '/4 Slots</span>';
+    html += '<span style="font-size:1.2em">' + (isCollapsed ? '\u25B6' : '\u25BC') + '</span>';
+    html += '</div>';
+    html += '</div>';
+
+    if (isCollapsed) {
+      html += '</div>';
+      return;
+    }
+
+    // Body
+    html += '<div class="day-card-body">';
+
+    // Time slots
+    html += '<div class="time-slots">';
+    SLOT_KEYS.forEach(function(slotKey) {
+      var slot = day.slots[slotKey];
+      html += '<div class="time-slot">';
+
+      // Label
+      html += '<div class="slot-label"><span class="slot-icon">' + SLOT_ICONS[slotKey] + '</span> ' + SLOT_LABELS[slotKey] + '</div>';
+
+      // Select + Freitext
+      html += '<div class="slot-fields">';
+      html += '<select class="slot-select" data-day="' + dayIdx + '" data-slot="' + slotKey + '" data-field="aktivitaetId" onchange="onSlotChange(this)">';
+      html += buildAktOptions(slot.aktivitaetId);
+      html += '</select>';
+      html += '<div class="slot-or">oder Freitext</div>';
+      html += '<input class="slot-input" type="text" placeholder="z.B. Strand, Einkaufen\u2026" value="' + esc(slot.freitext) + '" data-day="' + dayIdx + '" data-slot="' + slotKey + '" data-field="freitext" onchange="onSlotInput(this)" oninput="onSlotInput(this)">';
+      html += '</div>';
+
+      // Notes
+      html += '<input class="slot-notes" type="text" placeholder="Notizen\u2026" value="' + esc(slot.notizen) + '" data-day="' + dayIdx + '" data-slot="' + slotKey + '" data-field="notizen" onchange="onSlotInput(this)" oninput="onSlotInput(this)">';
+
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Meals
+    html += '<div class="meals-section">';
+    html += '<h4>&#127860; Mahlzeiten</h4>';
+    html += '<div class="meals-grid">';
+    MEAL_KEYS.forEach(function(mealKey) {
+      var val = (day.mahlzeiten && day.mahlzeiten[mealKey]) || '';
+      html += '<div class="meal-group">';
+      html += '<label>' + MEAL_LABELS[mealKey] + '</label>';
+      html += '<input class="meal-input" type="text" placeholder="' + MEAL_LABELS[mealKey] + ' planen\u2026" value="' + esc(val) + '" data-day="' + dayIdx + '" data-meal="' + mealKey + '" onchange="onMealInput(this)" oninput="onMealInput(this)">';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+
+    // Day actions
+    html += '<div class="day-actions">';
+    html += '<button class="btn btn-sm btn-maps" onclick="openMaps(' + dayIdx + ')" title="Tagesroute in Google Maps \u00F6ffnen">&#128506; Route auf Google Maps</button>';
+    html += '<button class="btn btn-sm btn-clear-day" onclick="clearDay(' + dayIdx + ')" title="Diesen Tag zur\u00FCcksetzen">&#128465; Tag leeren</button>';
+    html += '</div>';
+
+    html += '</div>'; // day-card-body
+    html += '</div>'; // day-card
+  });
+  document.getElementById('day-cards').innerHTML = html;
+}
+
+// ─── Event Handlers ───
+var _saveTimer = null;
+function debouncedSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(function() {
+    savePlan();
+    renderMiniCal();
+    renderStats();
+  }, 400);
+}
+
+function onSlotChange(el) {
+  var dayIdx = parseInt(el.getAttribute('data-day'), 10);
+  var slotKey = el.getAttribute('data-slot');
+  var field = el.getAttribute('data-field');
+
+  if (field === 'aktivitaetId') {
+    var val = el.value ? parseInt(el.value, 10) : null;
+    tagesplan[dayIdx].slots[slotKey].aktivitaetId = val;
+    // If an activity is selected, clear freitext
+    if (val) {
+      tagesplan[dayIdx].slots[slotKey].freitext = '';
+      // Update the freitext input in this same slot
+      var parent = el.closest('.time-slot');
+      if (parent) {
+        var ftInput = parent.querySelector('.slot-input');
+        if (ftInput) ftInput.value = '';
+      }
+    }
+  }
+  debouncedSave();
+}
+
+function onSlotInput(el) {
+  var dayIdx = parseInt(el.getAttribute('data-day'), 10);
+  var slotKey = el.getAttribute('data-slot');
+  var field = el.getAttribute('data-field');
+  tagesplan[dayIdx].slots[slotKey][field] = el.value;
+
+  // If freitext is typed, clear activity selection
+  if (field === 'freitext' && el.value.trim()) {
+    tagesplan[dayIdx].slots[slotKey].aktivitaetId = null;
+    var parent = el.closest('.time-slot');
+    if (parent) {
+      var selEl = parent.querySelector('.slot-select');
+      if (selEl) selEl.value = '';
+    }
+  }
+  debouncedSave();
+}
+
+function onMealInput(el) {
+  var dayIdx = parseInt(el.getAttribute('data-day'), 10);
+  var mealKey = el.getAttribute('data-meal');
+  if (!tagesplan[dayIdx].mahlzeiten) {
+    tagesplan[dayIdx].mahlzeiten = { fruehstueck: '', mittagessen: '', abendessen: '' };
+  }
+  tagesplan[dayIdx].mahlzeiten[mealKey] = el.value;
+  debouncedSave();
+}
+
+// ─── Day Actions ───
+function toggleDay(idx) {
+  collapsedDays[idx] = !collapsedDays[idx];
+  renderDayCards();
+}
+
+function expandAll() {
+  tagesplan.forEach(function(_, i) { collapsedDays[i] = false; });
+  renderDayCards();
+}
+
+function collapseAll() {
+  tagesplan.forEach(function(_, i) { collapsedDays[i] = true; });
+  renderDayCards();
+}
+
+function clearDay(dayIdx) {
+  if (!confirm('Tag ' + (dayIdx + 1) + ' wirklich zur\u00FCcksetzen?')) return;
+  var def = JSON.parse(JSON.stringify(TAGESPLAN_DEFAULT[dayIdx]));
+  // Reset to empty slots
+  SLOT_KEYS.forEach(function(k) {
+    def.slots[k] = { aktivitaetId: null, freitext: '', notizen: '' };
+  });
+  def.mahlzeiten = { fruehstueck: '', mittagessen: '', abendessen: '' };
+  tagesplan[dayIdx] = def;
+  savePlan();
+  renderAll();
+  toast('Tag ' + (dayIdx + 1) + ' zur\u00FCckgesetzt');
+}
+
+function resetAll() {
+  if (!confirm('Wirklich ALLE 14 Tage zur\u00FCcksetzen? Alle Eingaben gehen verloren!')) return;
+  tagesplan = JSON.parse(JSON.stringify(TAGESPLAN_DEFAULT));
+  savePlan();
+  collapsedDays = {};
+  renderAll();
+  toast('Gesamter Tagesplan zur\u00FCckgesetzt');
+}
+
+// ─── Google Maps Route ───
+function openMaps(dayIdx) {
+  var day = tagesplan[dayIdx];
+  var waypoints = [];
+
+  SLOT_KEYS.forEach(function(k) {
+    var s = day.slots[k];
+    if (s.aktivitaetId) {
+      var akt = getAktById(s.aktivitaetId);
+      if (akt && akt.mapLat && akt.mapLng) {
+        waypoints.push({ lat: akt.mapLat, lng: akt.mapLng, name: akt.name });
+      }
+    }
+  });
+
+  if (waypoints.length === 0) {
+    toast('Keine Aktivit\u00E4ten mit Koordinaten f\u00FCr diesen Tag hinterlegt', 'error');
+    return;
+  }
+
+  // Build Google Maps directions URL
+  var origin = waypoints[0].lat + ',' + waypoints[0].lng;
+  var destination = waypoints[waypoints.length - 1].lat + ',' + waypoints[waypoints.length - 1].lng;
+  var url = 'https://www.google.com/maps/dir/' + origin;
+
+  if (waypoints.length > 1) {
+    for (var i = 1; i < waypoints.length; i++) {
+      url += '/' + waypoints[i].lat + ',' + waypoints[i].lng;
+    }
+  }
+
+  window.open(url, '_blank');
+}
+
+// ─── Render All ───
+function renderAll() {
+  renderMiniCal();
+  renderStats();
+  renderJumpSelect();
+  renderDayCards();
+}
+
+renderAll();
+</script>
+</body>
+</html>

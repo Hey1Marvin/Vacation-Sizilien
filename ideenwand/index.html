@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ideenwand - Sizilien Juni 2026</title>
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="../shared/auth.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1"></div>
+
+<header>
+  <h1>Ideenwand</h1>
+  <p>Brainstorming &amp; Ideen f&uuml;r unseren Sizilien-Urlaub</p>
+</header>
+
+<div class="container">
+
+  <!-- Wer bist du? -->
+  <div class="voting-user-select" id="user-select-container">
+    <label>Wer bist du?</label>
+  </div>
+
+  <!-- Controls: Sort + Filter -->
+  <div class="ideen-controls">
+    <div class="sort-buttons">
+      <label>Sortierung:</label>
+      <button class="btn btn-sm sort-btn active" onclick="setSort('newest')" id="sort-newest">Neueste zuerst</button>
+      <button class="btn btn-sm sort-btn" onclick="setSort('popular')" id="sort-popular">Beliebteste zuerst</button>
+    </div>
+    <div class="filter-buttons">
+      <label>Kategorie:</label>
+      <button class="btn btn-sm filter-btn active" onclick="setFilter('alle')" data-filter="alle">Alle</button>
+      <button class="btn btn-sm filter-btn cat-ausflug" onclick="setFilter('Ausflug')" data-filter="Ausflug">Ausflug</button>
+      <button class="btn btn-sm filter-btn cat-essen" onclick="setFilter('Essen')" data-filter="Essen">Essen</button>
+      <button class="btn btn-sm filter-btn cat-aktivitaet" onclick="setFilter('Aktivit\u00e4t')" data-filter="Aktivit&auml;t">Aktivit&auml;t</button>
+      <button class="btn btn-sm filter-btn cat-sonstiges" onclick="setFilter('Sonstiges')" data-filter="Sonstiges">Sonstiges</button>
+    </div>
+  </div>
+
+  <!-- Ideas Grid -->
+  <div class="ideen-grid" id="ideen-grid"></div>
+
+  <!-- Neue Idee Form -->
+  <div class="add-form" id="new-idea-form">
+    <h3>Neue Idee hinzuf&uuml;gen</h3>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Idee / Vorschlag <span class="required">*</span></label>
+        <textarea id="idee-text" placeholder="z.B. Tagesausflug nach Cefal&ugrave; mit Strandtag" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Kategorie</label>
+        <select id="idee-kategorie">
+          <option value="Ausflug">Ausflug</option>
+          <option value="Essen">Essen</option>
+          <option value="Aktivit&auml;t">Aktivit&auml;t</option>
+          <option value="Sonstiges">Sonstiges</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Link (optional)</label>
+        <input type="url" id="idee-link" placeholder="https://...">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addIdee()">Idee posten</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>Sizilien Urlaub Juni 2026 &middot; Ideenwand</footer>
+
+<script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/data-sync.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+// ─── State ───
+var IDEEN_KEY = 'sizilien2026_ideen';
+var currentSort = 'newest';
+var currentFilter = 'alle';
+
+function getIdeen() {
+  try { return JSON.parse(localStorage.getItem(IDEEN_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveIdeen(ideen) {
+  localStorage.setItem(IDEEN_KEY, JSON.stringify(ideen));
+}
+
+// ─── User Select ───
+function onUserChange() {
+  var sel = document.getElementById('user-select-container-select');
+  if (sel) {
+    setActiveUser(sel.value);
+    renderAll();
+  }
+}
+
+function renderUserSelect() {
+  var container = document.getElementById('user-select-container');
+  container.innerHTML = '<label>Wer bist du?</label> ' + renderPersonSelect('user-select-container', 'onUserChange()');
+}
+
+// ─── Sort & Filter ───
+function setSort(sort) {
+  currentSort = sort;
+  document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('sort-' + sort).classList.add('active');
+  renderIdeen();
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.filter-btn[data-filter="' + filter + '"]').forEach(function(b) { b.classList.add('active'); });
+  renderIdeen();
+}
+
+// ─── Render Ideas ───
+function renderIdeen() {
+  var container = document.getElementById('ideen-grid');
+  var ideen = getIdeen();
+
+  // Filter
+  if (currentFilter !== 'alle') {
+    ideen = ideen.filter(function(i) { return i.kategorie === currentFilter; });
+  }
+
+  // Sort
+  if (currentSort === 'newest') {
+    ideen.sort(function(a, b) { return new Date(b.datum) - new Date(a.datum); });
+  } else {
+    ideen.sort(function(a, b) {
+      var la = a.likes ? Object.keys(a.likes).length : 0;
+      var lb = b.likes ? Object.keys(b.likes).length : 0;
+      return lb - la;
+    });
+  }
+
+  if (ideen.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#128161;</div><h3>Noch keine Ideen</h3><p>Sei der/die Erste und poste eine Idee!</p></div>';
+    return;
+  }
+
+  var html = '';
+  ideen.forEach(function(idee, index) {
+    var person = getReisenderById(idee.person);
+    var likeCount = idee.likes ? Object.keys(idee.likes).length : 0;
+    var activeUser = getActiveUser();
+    var hasLiked = activeUser && idee.likes && idee.likes[activeUser];
+
+    // Category styling
+    var catClass = 'cat-sonstiges';
+    if (idee.kategorie === 'Ausflug') catClass = 'cat-ausflug';
+    else if (idee.kategorie === 'Essen') catClass = 'cat-essen';
+    else if (idee.kategorie === 'Aktivit\u00e4t') catClass = 'cat-aktivitaet';
+
+    // Random tilt
+    var tiltDeg = ((index * 7 + 3) % 7) - 3; // Range: -3 to 3 degrees
+
+    html += '<div class="idee-card ' + catClass + '" style="--tilt:' + tiltDeg + 'deg">';
+
+    // Category badge
+    html += '<div class="idee-cat-badge ' + catClass + '">' + esc(idee.kategorie) + '</div>';
+
+    // Delete button
+    html += '<button class="idee-delete-btn" onclick="deleteIdee(\'' + esc(idee.id) + '\')" title="L\u00F6schen">&times;</button>';
+
+    // Text
+    html += '<div class="idee-text">' + esc(idee.text) + '</div>';
+
+    // Link
+    if (idee.link) {
+      html += '<a class="idee-link" href="' + esc(idee.link) + '" target="_blank" rel="noopener">Link ansehen</a>';
+    }
+
+    // Footer: person + timestamp
+    html += '<div class="idee-footer">';
+    if (person) {
+      html += '<div class="idee-author">' + renderInitiale(person, 24) + ' <span>' + esc(person.name) + '</span></div>';
+    }
+    html += '<span class="idee-time">' + formatTime(idee.datum) + '</span>';
+    html += '</div>';
+
+    // Like bar
+    html += '<div class="idee-like-bar">';
+    html += '<button class="like-btn' + (hasLiked ? ' liked' : '') + '" onclick="toggleLike(\'' + esc(idee.id) + '\')">';
+    html += '&#128077; ' + likeCount;
+    html += '</button>';
+
+    // Liker initials
+    if (idee.likes) {
+      html += '<div class="like-voters">';
+      Object.keys(idee.likes).forEach(function(uid) {
+        var r = getReisenderById(uid);
+        if (r) html += renderInitiale(r, 20);
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function formatTime(isoStr) {
+  var d = new Date(isoStr);
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Like ───
+function toggleLike(ideeId) {
+  var activeUser = getActiveUser();
+  if (!activeUser) {
+    toast('Bitte w\u00E4hle zuerst aus, wer du bist!', 'error');
+    return;
+  }
+
+  var ideen = getIdeen();
+  var idee = ideen.find(function(i) { return i.id === ideeId; });
+  if (!idee) return;
+
+  if (!idee.likes) idee.likes = {};
+
+  if (idee.likes[activeUser]) {
+    delete idee.likes[activeUser];
+  } else {
+    idee.likes[activeUser] = true;
+  }
+
+  saveIdeen(ideen);
+  renderIdeen();
+}
+
+// ─── Delete ───
+function deleteIdee(ideeId) {
+  if (!confirm('Idee wirklich l\u00F6schen?')) return;
+  var ideen = getIdeen();
+  ideen = ideen.filter(function(i) { return i.id !== ideeId; });
+  saveIdeen(ideen);
+  renderIdeen();
+  toast('Idee gel\u00F6scht');
+}
+
+// ─── Add Idea ───
+function addIdee() {
+  var activeUser = getActiveUser();
+  if (!activeUser) {
+    toast('Bitte w\u00E4hle zuerst aus, wer du bist!', 'error');
+    return;
+  }
+
+  var text = document.getElementById('idee-text').value.trim();
+  if (!text) {
+    toast('Bitte Idee eingeben!', 'error');
+    return;
+  }
+
+  var kategorie = document.getElementById('idee-kategorie').value;
+  var link = document.getElementById('idee-link').value.trim();
+
+  var ideen = getIdeen();
+  ideen.push({
+    id: 'i' + Date.now(),
+    text: text,
+    kategorie: kategorie,
+    person: activeUser,
+    link: link || '',
+    datum: new Date().toISOString(),
+    likes: {}
+  });
+
+  saveIdeen(ideen);
+
+  // Reset form
+  document.getElementById('idee-text').value = '';
+  document.getElementById('idee-link').value = '';
+
+  renderIdeen();
+  toast('Idee gepostet!');
+}
+
+// ─── Render All ───
+function renderAll() {
+  renderUserSelect();
+  renderIdeen();
+}
+
+renderAll();
+</script>
+</body>
+</html>

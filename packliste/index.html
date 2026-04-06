@@ -9,6 +9,7 @@
 </head>
 <body>
 
+<a href="#main-content" class="skip-link">Zum Inhalt springen</a>
 <div id="site-nav" data-depth="1" data-title=""></div>
 
 <header>
@@ -16,16 +17,16 @@
   <p>Gemeinsame &amp; pers&ouml;nliche Checkliste &middot; Sizilien Juni 2026</p>
 </header>
 
-<div class="container">
+<div class="container" id="main-content">
 
   <div class="total-progress" id="total-progress"></div>
 
   <h2>Gemeinsame Sachen</h2>
-  <p style="color:var(--text-light);margin-bottom:15px;font-size:.9em">Sachen, die die Gruppe zusammen braucht &mdash; Zust&auml;ndigkeit festlegen!</p>
+  <p class="text-muted text-sm" style="margin-bottom:var(--space-4)">Sachen, die die Gruppe zusammen braucht &mdash; Zust&auml;ndigkeit festlegen!</p>
   <div id="gemeinsam-list"></div>
 
   <h2>Pers&ouml;nliche Packliste</h2>
-  <p style="color:var(--text-light);margin-bottom:15px;font-size:.9em">Dein Fortschritt wird im Browser gespeichert (localStorage).</p>
+  <p class="text-muted text-sm" style="margin-bottom:var(--space-4)">Dein Fortschritt wird im Browser gespeichert (localStorage).</p>
   <div id="persoenlich-list"></div>
 
   <div class="reset-btn">
@@ -35,21 +36,31 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<footer>Sizilien Urlaub Juni 2026</footer>
+<footer></footer>
 
+<script src="../shared/icons.js"></script>
+<script src="../shared/config.js"></script>
+<script src="../shared/data.js"></script>
 <script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
 <script src="../shared/nav.js"></script>
 <script src="packliste.js"></script>
 <script>
 var STORAGE_KEY = 'sizilien2026_packliste';
 
-function toggleSection(el) {
-  var items = el.parentElement.querySelector('.checklist-items');
-  var chevron = el.querySelector('.chevron');
-  if (!items) return;
-  var isHidden = items.style.display === 'none';
-  items.style.display = isHidden ? 'block' : 'none';
-  if (chevron) chevron.textContent = isHidden ? '\u25BC' : '\u25B2';
+/* ─── Icon mapping: category id -> Icons function ─── */
+var CATEGORY_ICONS = {
+  kleidung:  function() { return Icons.shirt({size: 20}); },
+  hygiene:   function() { return Icons.droplets({size: 20}); },
+  elektronik: function() { return Icons.plug({size: 20}); },
+  dokumente: function() { return Icons.fileText({size: 20}); },
+  strand:    function() { return Icons.sunMedium({size: 20}); },
+  sonstiges: function() { return Icons.backpack({size: 20}); },
+  gemeinsam: function() { return Icons.package({size: 20}); }
+};
+
+function getCategoryIcon(id) {
+  return CATEGORY_ICONS[id] ? CATEGORY_ICONS[id]() : '';
 }
 
 function loadState() {
@@ -69,32 +80,68 @@ function toggleItem(key) {
   renderAll();
 }
 
+var ZUSTAENDIG_KEY = 'sizilien2026_zustaendig';
+function loadZustaendig() {
+  try { return JSON.parse(localStorage.getItem(ZUSTAENDIG_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveZustaendig(data) { localStorage.setItem(ZUSTAENDIG_KEY, JSON.stringify(data)); }
+
+function assignPerson(itemId, personId) {
+  var z = loadZustaendig();
+  z[itemId] = personId;
+  saveZustaendig(z);
+  renderGemeinsam();
+  var r = getReisenderById(personId);
+  toast((r ? r.name : personId) + ' ist jetzt zust\u00E4ndig!');
+}
+
 function renderGemeinsam() {
   var state = loadState();
+  var zustaendig = loadZustaendig();
   var checked = 0;
   var total = PACKLISTE_GEMEINSAM.length;
 
   var items = PACKLISTE_GEMEINSAM.map(function(g) {
     var isChecked = !!state[g.id];
     if (isChecked) checked++;
+    var assignedId = zustaendig[g.id] || '';
+    var assignedR = assignedId ? getReisenderById(assignedId) : null;
+
+    var personBtns = '<div class="zustaendig-btns">';
+    REISENDE.forEach(function(r) {
+      var isAssigned = r.id === assignedId;
+      personBtns += '<button class="zustaendig-btn' + (isAssigned ? ' active' : '') + '" ' +
+        'style="' + (isAssigned ? 'background:' + r.farbe + ';color:#fff;border-color:' + r.farbe : '') + '" ' +
+        'onclick="assignPerson(\'' + g.id + '\',\'' + r.id + '\')" title="' + esc(r.name) + '">' +
+        esc(r.initialen) + '</button>';
+    });
+    personBtns += '</div>';
+
     return '<div class="check-item' + (isChecked ? ' checked' : '') + '">' +
       '<input type="checkbox" id="' + g.id + '"' + (isChecked ? ' checked' : '') +
       ' onchange="toggleItem(\'' + g.id + '\')">' +
       '<label for="' + g.id + '">' + esc(g.item) + '</label>' +
-      (g.zustaendig ? '<span class="zustaendig">' + esc(g.zustaendig) + '</span>' : '<span class="zustaendig" style="color:var(--accent)">Noch offen</span>') +
+      (assignedR ? '<span class="zustaendig" style="color:' + assignedR.farbe + ';font-weight:600">' + renderInitiale(assignedR, 20) + ' ' + esc(assignedR.name) + '</span>' : '') +
+      personBtns +
     '</div>';
   }).join('');
 
   var pct = total > 0 ? Math.round(checked / total * 100) : 0;
+  var chevronIcon = Icons.chevronRight({size: 18});
+
   document.getElementById('gemeinsam-list').innerHTML =
-    '<div class="checklist-section">' +
-      '<div class="checklist-header" onclick="toggleSection(this)">' +
-        '<h3>&#128230; Gemeinsame Items <span class="chevron" style="float:right;font-size:.8em">\u25BC</span></h3>' +
-        '<span class="progress-text">' + checked + '/' + total + ' (' + pct + '%)</span>' +
+    '<details class="collapsible" open>' +
+      '<summary>' +
+        '<span class="chevron">' + chevronIcon + '</span>' +
+        getCategoryIcon('gemeinsam') +
+        ' Gemeinsame Items' +
+        '<span class="summary-meta">' + checked + '/' + total + ' (' + pct + '%)</span>' +
+      '</summary>' +
+      '<div class="collapsible-content">' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+        items +
       '</div>' +
-      '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
-      '<div class="checklist-items">' + items + '</div>' +
-    '</div>';
+    '</details>';
 }
 
 function renderPersoenlich() {
@@ -116,15 +163,21 @@ function renderPersoenlich() {
     }).join('');
 
     var pct = total > 0 ? Math.round(checked / total * 100) : 0;
+    var chevronIcon = Icons.chevronRight({size: 18});
+    var catIcon = getCategoryIcon(kat.id);
 
-    return '<div class="checklist-section">' +
-      '<div class="checklist-header" onclick="toggleSection(this)">' +
-        '<h3>' + kat.icon + ' ' + esc(kat.name) + ' <span class="chevron" style="float:right;font-size:.8em">\u25BC</span></h3>' +
-        '<span class="progress-text">' + checked + '/' + total + ' (' + pct + '%)</span>' +
+    return '<details class="collapsible" open>' +
+      '<summary>' +
+        '<span class="chevron">' + chevronIcon + '</span>' +
+        catIcon +
+        ' ' + esc(kat.name) +
+        '<span class="summary-meta">' + checked + '/' + total + ' (' + pct + '%)</span>' +
+      '</summary>' +
+      '<div class="collapsible-content">' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+        items +
       '</div>' +
-      '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
-      '<div class="checklist-items">' + items + '</div>' +
-    '</div>';
+    '</details>';
   }).join('');
 }
 
@@ -142,11 +195,13 @@ function renderTotalProgress() {
   });
 
   var pct = total > 0 ? Math.round(checked / total * 100) : 0;
+  var icon = pct === 100 ? Icons.checkCircle({size: 24}) : Icons.listChecks({size: 24});
+
   document.getElementById('total-progress').innerHTML =
-    '<div style="font-size:.9em;color:var(--text-light);margin-bottom:5px">Gesamtfortschritt</div>' +
+    '<div class="text-muted text-sm" style="margin-bottom:var(--space-1)">Gesamtfortschritt</div>' +
     '<div class="big-num">' + pct + '%</div>' +
     '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
-    '<div style="font-size:.85em;color:var(--text-light)">' + checked + ' von ' + total + ' Items abgehakt</div>';
+    '<div class="text-muted text-xs">' + icon + ' ' + checked + ' von ' + total + ' Items abgehakt</div>';
 }
 
 function renderAll() {
@@ -156,11 +211,16 @@ function renderAll() {
 }
 
 function resetAll() {
-  if (confirm('Wirklich alle Haken zur\u00FCcksetzen?')) {
-    localStorage.removeItem(STORAGE_KEY);
-    renderAll();
-    toast('Packliste zur\u00FCckgesetzt');
-  }
+  confirmModal(
+    'Packliste zur\u00FCcksetzen',
+    'Wirklich alle Haken zur\u00FCcksetzen? Dein gesamter Fortschritt geht verloren.',
+    function() {
+      localStorage.removeItem(STORAGE_KEY);
+      renderAll();
+      toast('Packliste zur\u00FCckgesetzt');
+    },
+    { danger: true, confirmLabel: 'Zur\u00FCcksetzen', cancelLabel: 'Abbrechen' }
+  );
 }
 
 renderAll();

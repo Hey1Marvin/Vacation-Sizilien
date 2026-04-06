@@ -1,0 +1,122 @@
+/* ─── Auth UI Styles (GitHub OAuth Modal) ─── */
+/* Person-Badge und Person-Select sind in shared/styles.css definiert */
+
+/* Auth Modal */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--surface-overlay);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+}
+.auth-modal {
+  background: var(--surface-card);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-8) var(--space-6);
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: var(--shadow-hover);
+}
+.auth-modal h3 {
+  color: var(--primary);
+  margin: 0 0 var(--space-4);
+  font-size: 1.3rem;
+}
+.auth-modal p {
+  color: var(--gray-500);
+  font-size: .875rem;
+  margin-bottom: var(--space-5);
+}
+.auth-code {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--primary);
+  background: var(--info-light);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-sm);
+  margin: var(--space-4) 0;
+  font-family: 'Courier New', monospace;
+  user-select: all;
+}
+.auth-copy-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .8125rem;
+  margin: var(--space-1);
+}
+.auth-copy-btn:hover { background: var(--primary-light); }
+.auth-link-btn {
+  background: var(--success);
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: .8125rem;
+  text-decoration: none;
+  display: inline-block;
+  margin: var(--space-1);
+}
+.auth-link-btn:hover { opacity: .9; }
+.auth-waiting {
+  color: var(--gray-500);
+  font-size: .875rem;
+  margin-top: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.auth-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: auth-spin .8s linear infinite;
+}
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+.auth-cancel-btn {
+  background: none;
+  border: none;
+  color: var(--gray-500);
+  cursor: pointer;
+  font-size: .8125rem;
+  margin-top: var(--space-3);
+  text-decoration: underline;
+  font-family: inherit;
+}
+.auth-error {
+  color: var(--error);
+  font-weight: 600;
+  margin-top: var(--space-3);
+  font-size: .875rem;
+}
+.auth-not-configured {
+  background: var(--warning-light);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  color: var(--gray-700);
+  font-size: .8125rem;
+  margin: var(--space-3) 0;
+}
+
+@media (max-width: 768px) {
+  .auth-modal { padding: var(--space-6) var(--space-4); }
+  .auth-code { font-size: 1.5rem; }
+}

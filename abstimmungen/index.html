@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abstimmungen - Sizilien Juni 2026</title>
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="../shared/voting.css" />
+<link rel="stylesheet" href="../shared/auth.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1"></div>
+
+<header>
+  <h1>Abstimmungen</h1>
+  <p>Verf&uuml;gbarkeit, Umfragen &amp; gemeinsame Entscheidungen</p>
+</header>
+
+<div class="container">
+
+  <!-- Wer bist du? -->
+  <div class="voting-user-select" id="user-select-container">
+    <label>Wer bist du?</label>
+  </div>
+
+  <!-- Verfügbarkeits-Kalender -->
+  <h2>Verf&uuml;gbarkeits-Kalender &ndash; Juni 2026</h2>
+  <div class="card">
+    <p class="cal-info">Klicke auf die Tage, an denen du verf&uuml;gbar bist. Die Heatmap zeigt, wie viele Personen an jedem Tag k&ouml;nnen.</p>
+    <div class="cal-legend">
+      <span class="cal-legend-item"><span class="cal-dot" style="background:#ecf0f1"></span> 0 Personen</span>
+      <span class="cal-legend-item"><span class="cal-dot" style="background:#f1c40f"></span> 1&ndash;2</span>
+      <span class="cal-legend-item"><span class="cal-dot" style="background:#e67e22"></span> 3&ndash;4</span>
+      <span class="cal-legend-item"><span class="cal-dot" style="background:#27ae60"></span> Alle 5</span>
+    </div>
+    <div class="avail-calendar" id="calendar-grid"></div>
+    <div class="best-period" id="best-period"></div>
+  </div>
+
+  <!-- Allgemeine Abstimmungen -->
+  <h2>Allgemeine Abstimmungen</h2>
+  <div id="polls-container"></div>
+
+  <!-- Neue Abstimmung erstellen -->
+  <div class="add-form" id="new-poll-form">
+    <h3>Neue Abstimmung erstellen</h3>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Frage <span class="required">*</span></label>
+        <input type="text" id="poll-question" placeholder="z.B. Welches Restaurant am ersten Abend?">
+      </div>
+      <div class="form-group full">
+        <label>Optionen</label>
+        <div id="poll-options-list">
+          <div class="option-row">
+            <input type="text" class="poll-option-input" placeholder="Option 1">
+            <button class="btn btn-sm btn-danger remove-option-btn" onclick="removeOption(this)" title="Entfernen">&times;</button>
+          </div>
+          <div class="option-row">
+            <input type="text" class="poll-option-input" placeholder="Option 2">
+            <button class="btn btn-sm btn-danger remove-option-btn" onclick="removeOption(this)" title="Entfernen">&times;</button>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="addOptionField()" style="margin-top:8px">+ Option hinzuf&uuml;gen</button>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="createPoll()">Abstimmung erstellen</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>Sizilien Urlaub Juni 2026 &middot; Abstimmungen &amp; Verf&uuml;gbarkeit</footer>
+
+<script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/data-sync.js"></script>
+<script src="../shared/voting.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+// ─── State ───
+var VERFUEGBARKEIT_KEY = 'sizilien2026_verfuegbarkeit';
+var POLLS_KEY = 'sizilien2026_polls';
+
+// June 2026: starts on Monday (day 1 = Monday)
+var YEAR = 2026;
+var MONTH = 5; // JS month index (0-based), June = 5
+var DAYS_IN_JUNE = 30;
+var FIRST_DOW = 1; // Monday = 1 (getDay(): 0=Sun, 1=Mon)
+var DAY_NAMES = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+// Default polls
+var DEFAULT_POLLS = [
+  {
+    id: 'poll_default_1',
+    frage: 'Kochkurs machen?',
+    optionen: ['Ja', 'Nein', 'Egal'],
+    stimmen: {}
+  },
+  {
+    id: 'poll_default_2',
+    frage: 'Welcher Tag f\u00FCr Cefal\u00F9?',
+    optionen: ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'],
+    stimmen: {}
+  },
+  {
+    id: 'poll_default_3',
+    frage: 'Eher Strand oder Sightseeing-Tag?',
+    optionen: ['Mehr Strand', 'Mehr Sightseeing', 'Ausgewogen'],
+    stimmen: {}
+  }
+];
+
+function getVerfuegbarkeit() {
+  try { return JSON.parse(localStorage.getItem(VERFUEGBARKEIT_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function saveVerfuegbarkeit(data) {
+  localStorage.setItem(VERFUEGBARKEIT_KEY, JSON.stringify(data));
+}
+
+function getPolls() {
+  try {
+    var stored = JSON.parse(localStorage.getItem(POLLS_KEY));
+    if (stored && stored.length > 0) return stored;
+    return DEFAULT_POLLS.map(function(p) { return JSON.parse(JSON.stringify(p)); });
+  } catch(e) {
+    return DEFAULT_POLLS.map(function(p) { return JSON.parse(JSON.stringify(p)); });
+  }
+}
+function savePolls(polls) {
+  localStorage.setItem(POLLS_KEY, JSON.stringify(polls));
+}
+
+// ─── User Select ───
+function onUserChange() {
+  var sel = document.getElementById('user-select-container-select');
+  if (sel) {
+    setActiveUser(sel.value);
+    renderAll();
+  }
+}
+
+function renderUserSelect() {
+  var container = document.getElementById('user-select-container');
+  container.innerHTML = '<label>Wer bist du?</label> ' + renderPersonSelect('user-select-container', 'onUserChange()');
+}
+
+// ─── Calendar ───
+function dateStr(day) {
+  return YEAR + '-06-' + (day < 10 ? '0' : '') + day;
+}
+
+function renderCalendar() {
+  var grid = document.getElementById('calendar-grid');
+  var verfuegbarkeit = getVerfuegbarkeit();
+  var activeUser = getActiveUser();
+
+  // Build user dates for the active user
+  var myDates = (activeUser && verfuegbarkeit[activeUser]) ? verfuegbarkeit[activeUser] : [];
+
+  var html = '';
+  // Day headers
+  DAY_NAMES.forEach(function(d) {
+    html += '<div class="avail-day-header">' + d + '</div>';
+  });
+
+  // June 2026 starts on Monday = index 0 in our Mon-Sun grid
+  // getDay() for 2026-06-01 = 1 (Monday)
+  // Our grid: Mo=0, Di=1, Mi=2, Do=3, Fr=4, Sa=5, So=6
+  // So offset = (getDay() + 6) % 7 = (1+6)%7 = 0 -> no empty cells before day 1
+  var firstDay = new Date(YEAR, MONTH, 1);
+  var offset = (firstDay.getDay() + 6) % 7; // Convert Sun=0..Sat=6 to Mon=0..Sun=6
+
+  // Empty cells before first day
+  for (var e = 0; e < offset; e++) {
+    html += '<div class="avail-day empty"></div>';
+  }
+
+  // Day cells
+  for (var d = 1; d <= DAYS_IN_JUNE; d++) {
+    var ds = dateStr(d);
+    var isSelected = myDates.indexOf(ds) !== -1;
+
+    // Count how many people are available on this day
+    var availPeople = [];
+    REISENDE.forEach(function(r) {
+      if (verfuegbarkeit[r.id] && verfuegbarkeit[r.id].indexOf(ds) !== -1) {
+        availPeople.push(r);
+      }
+    });
+    var count = availPeople.length;
+
+    // Heatmap class
+    var heatBg = '';
+    if (count === 0) heatBg = '#ecf0f1';
+    else if (count <= 2) heatBg = '#f1c40f';
+    else if (count <= 4) heatBg = '#e67e22';
+    else heatBg = '#27ae60';
+
+    html += '<div class="avail-day' + (isSelected ? ' selected' : '') + '" ' +
+      'onclick="toggleDay(' + d + ')" ' +
+      'style="background:' + (isSelected ? '' : heatBg) + '">' +
+      '<span class="day-num">' + d + '</span>';
+
+    // Colored dots for available people
+    if (availPeople.length > 0) {
+      html += '<div class="avail-heat">';
+      availPeople.forEach(function(r) {
+        html += '<span class="avail-heat-dot" style="background:' + r.farbe + '" title="' + esc(r.name) + '"></span>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>';
+  }
+
+  grid.innerHTML = html;
+
+  // Calculate best period
+  renderBestPeriod(verfuegbarkeit);
+}
+
+function toggleDay(day) {
+  var activeUser = getActiveUser();
+  if (!activeUser) {
+    toast('Bitte w\u00E4hle zuerst aus, wer du bist!', 'error');
+    return;
+  }
+
+  var verfuegbarkeit = getVerfuegbarkeit();
+  if (!verfuegbarkeit[activeUser]) verfuegbarkeit[activeUser] = [];
+
+  var ds = dateStr(day);
+  var idx = verfuegbarkeit[activeUser].indexOf(ds);
+  if (idx === -1) {
+    verfuegbarkeit[activeUser].push(ds);
+  } else {
+    verfuegbarkeit[activeUser].splice(idx, 1);
+  }
+
+  saveVerfuegbarkeit(verfuegbarkeit);
+  renderCalendar();
+}
+
+function renderBestPeriod(verfuegbarkeit) {
+  var container = document.getElementById('best-period');
+
+  // Find longest stretch where all 5 are available
+  var bestStart = 0, bestLen = 0, curStart = 0, curLen = 0;
+
+  for (var d = 1; d <= DAYS_IN_JUNE; d++) {
+    var ds = dateStr(d);
+    var allAvail = true;
+    REISENDE.forEach(function(r) {
+      if (!verfuegbarkeit[r.id] || verfuegbarkeit[r.id].indexOf(ds) === -1) {
+        allAvail = false;
+      }
+    });
+
+    if (allAvail) {
+      if (curLen === 0) curStart = d;
+      curLen++;
+      if (curLen > bestLen) {
+        bestLen = curLen;
+        bestStart = curStart;
+      }
+    } else {
+      curLen = 0;
+    }
+  }
+
+  if (bestLen > 0) {
+    var startDate = new Date(YEAR, MONTH, bestStart);
+    var endDate = new Date(YEAR, MONTH, bestStart + bestLen - 1);
+    container.innerHTML =
+      '<div class="best-period-banner">' +
+        '<div class="best-period-label">Bester Zeitraum (alle 5 verf\u00FCgbar)</div>' +
+        '<div class="best-period-value">' +
+          startDate.toLocaleDateString('de-DE', { day: '2-digit', month: 'long' }) + ' \u2013 ' +
+          endDate.toLocaleDateString('de-DE', { day: '2-digit', month: 'long' }) +
+          ' (' + bestLen + ' Tage)' +
+        '</div>' +
+      '</div>';
+  } else {
+    // Check if anyone has entered availability
+    var anyAvail = false;
+    REISENDE.forEach(function(r) {
+      if (verfuegbarkeit[r.id] && verfuegbarkeit[r.id].length > 0) anyAvail = true;
+    });
+
+    if (anyAvail) {
+      container.innerHTML = '<div class="best-period-banner warn"><div class="best-period-label">Kein gemeinsamer Zeitraum gefunden</div><div class="best-period-value">Noch nicht alle Personen haben ihre Verf\u00FCgbarkeit eingetragen.</div></div>';
+    } else {
+      container.innerHTML = '<div class="best-period-banner neutral"><div class="best-period-label">Verf\u00FCgbarkeit eintragen</div><div class="best-period-value">W\u00E4hle oben deinen Namen und klicke auf die Tage, an denen du kannst.</div></div>';
+    }
+  }
+}
+
+// ─── Polls ───
+function renderPolls() {
+  var container = document.getElementById('polls-container');
+  var polls = getPolls();
+  var activeUser = getActiveUser();
+
+  if (polls.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">&#128499;&#65039;</div><h3>Noch keine Abstimmungen</h3><p>Erstelle die erste Abstimmung unten!</p></div>';
+    return;
+  }
+
+  var html = '';
+  polls.forEach(function(poll) {
+    html += '<div class="poll-card">';
+    html += '<div class="poll-header"><h4>' + esc(poll.frage) + '</h4>';
+    html += '<button class="btn btn-sm btn-danger poll-delete-btn" onclick="deletePoll(\'' + esc(poll.id) + '\')" title="L\u00F6schen">&times;</button>';
+    html += '</div>';
+
+    // Count votes per option
+    var voteCounts = {};
+    var totalVotes = 0;
+    poll.optionen.forEach(function(opt) { voteCounts[opt] = { count: 0, voters: [] }; });
+
+    if (poll.stimmen) {
+      Object.keys(poll.stimmen).forEach(function(uid) {
+        var choice = poll.stimmen[uid];
+        if (voteCounts[choice]) {
+          voteCounts[choice].count++;
+          voteCounts[choice].voters.push(uid);
+          totalVotes++;
+        }
+      });
+    }
+
+    // My current vote
+    var myVote = (activeUser && poll.stimmen) ? poll.stimmen[activeUser] : null;
+
+    html += '<div class="poll-options">';
+    poll.optionen.forEach(function(opt) {
+      var vc = voteCounts[opt];
+      var pct = totalVotes > 0 ? Math.round(vc.count / totalVotes * 100) : 0;
+      var isSelected = myVote === opt;
+
+      html += '<div class="poll-option' + (isSelected ? ' selected' : '') + '" onclick="votePoll(\'' + esc(poll.id) + '\',\'' + esc(opt) + '\')">';
+      html += '<span class="poll-option-text">' + esc(opt) + '</span>';
+      html += '<div class="poll-option-bar"><div class="poll-option-fill" style="width:' + pct + '%">' + (pct > 0 ? pct + '%' : '') + '</div></div>';
+      html += '<span class="poll-vote-count">' + vc.count + '</span>';
+
+      // Voter initials
+      html += '<div class="poll-voters-list">';
+      vc.voters.forEach(function(uid) {
+        var r = getReisenderById(uid);
+        if (r) html += renderInitiale(r, 20);
+      });
+      html += '</div>';
+
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function votePoll(pollId, option) {
+  var activeUser = getActiveUser();
+  if (!activeUser) {
+    toast('Bitte w\u00E4hle zuerst aus, wer du bist!', 'error');
+    return;
+  }
+
+  var polls = getPolls();
+  var poll = polls.find(function(p) { return p.id === pollId; });
+  if (!poll) return;
+
+  if (!poll.stimmen) poll.stimmen = {};
+
+  // Toggle: if same option clicked, remove vote
+  if (poll.stimmen[activeUser] === option) {
+    delete poll.stimmen[activeUser];
+    toast('Stimme zur\u00FCckgezogen');
+  } else {
+    poll.stimmen[activeUser] = option;
+    var r = getReisenderById(activeUser);
+    toast((r ? r.name : 'Du') + ' hat f\u00FCr "' + option + '" gestimmt');
+  }
+
+  savePolls(polls);
+  renderPolls();
+}
+
+function deletePoll(pollId) {
+  if (!confirm('Abstimmung wirklich l\u00F6schen?')) return;
+  var polls = getPolls();
+  polls = polls.filter(function(p) { return p.id !== pollId; });
+  savePolls(polls);
+  renderPolls();
+  toast('Abstimmung gel\u00F6scht');
+}
+
+// ─── New Poll Form ───
+function addOptionField() {
+  var list = document.getElementById('poll-options-list');
+  var count = list.querySelectorAll('.option-row').length + 1;
+  var row = document.createElement('div');
+  row.className = 'option-row';
+  row.innerHTML = '<input type="text" class="poll-option-input" placeholder="Option ' + count + '">' +
+    '<button class="btn btn-sm btn-danger remove-option-btn" onclick="removeOption(this)" title="Entfernen">&times;</button>';
+  list.appendChild(row);
+}
+
+function removeOption(btn) {
+  var list = document.getElementById('poll-options-list');
+  if (list.querySelectorAll('.option-row').length <= 2) {
+    toast('Mindestens 2 Optionen erforderlich', 'error');
+    return;
+  }
+  btn.parentElement.remove();
+}
+
+function createPoll() {
+  var question = document.getElementById('poll-question').value.trim();
+  if (!question) {
+    toast('Bitte Frage eingeben!', 'error');
+    return;
+  }
+
+  var inputs = document.querySelectorAll('.poll-option-input');
+  var options = [];
+  inputs.forEach(function(inp) {
+    var v = inp.value.trim();
+    if (v) options.push(v);
+  });
+
+  if (options.length < 2) {
+    toast('Mindestens 2 Optionen erforderlich!', 'error');
+    return;
+  }
+
+  var polls = getPolls();
+  polls.push({
+    id: 'poll_' + Date.now(),
+    frage: question,
+    optionen: options,
+    stimmen: {}
+  });
+
+  savePolls(polls);
+
+  // Reset form
+  document.getElementById('poll-question').value = '';
+  var list = document.getElementById('poll-options-list');
+  list.innerHTML =
+    '<div class="option-row"><input type="text" class="poll-option-input" placeholder="Option 1"><button class="btn btn-sm btn-danger remove-option-btn" onclick="removeOption(this)" title="Entfernen">&times;</button></div>' +
+    '<div class="option-row"><input type="text" class="poll-option-input" placeholder="Option 2"><button class="btn btn-sm btn-danger remove-option-btn" onclick="removeOption(this)" title="Entfernen">&times;</button></div>';
+
+  renderPolls();
+  toast('Abstimmung erstellt!');
+}
+
+// ─── Render All ───
+function renderAll() {
+  renderUserSelect();
+  renderCalendar();
+  renderPolls();
+}
+
+renderAll();
+</script>
+</body>
+</html>

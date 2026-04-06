@@ -10,6 +10,7 @@
 </head>
 <body>
 
+<a href="#main-content" class="skip-link">Zum Inhalt springen</a>
 <div id="site-nav" data-depth="1" data-title=""></div>
 
 <header>
@@ -17,7 +18,7 @@
   <p>Sehensw&uuml;rdigkeiten, Str&auml;nde, Restaurants &amp; Ausfl&uuml;ge</p>
 </header>
 
-<div class="container">
+<div class="container" id="main-content">
 
   <h2>Karte</h2>
   <div id="akt-map"></div>
@@ -26,7 +27,16 @@
 
   <div class="filter-bar" id="filter-bar"></div>
 
+  <div style="margin:10px 0;display:flex;align-items:center;gap:8px">
+    <span style="font-size:.85em;color:var(--text-light)">Sortierung:</span>
+    <button class="filter-btn sort-btn active" onclick="sortBy('standard')">Standard</button>
+    <button class="filter-btn sort-btn" onclick="sortBy('beliebtheit')">Beliebteste</button>
+  </div>
   <div class="aktivitaeten-grid" id="akt-grid"></div>
+
+  <h2>Sizilianische K&uuml;che</h2>
+  <p style="color:var(--text-light);margin-bottom:15px;font-size:.9em">Must-Try-Spezialit&auml;ten auf Sizilien &mdash; unbedingt probieren!</p>
+  <div class="spezialitaeten-grid" id="spez-grid"></div>
 
   <h2>Aktivit&auml;t hinzuf&uuml;gen</h2>
   <div class="add-form">
@@ -58,7 +68,7 @@
       <div class="form-group full"><label>Beschreibung</label><textarea id="f-beschreibung" placeholder="Kurze Beschreibung der Aktivit&auml;t"></textarea></div>
       <div class="form-actions">
         <button class="btn btn-primary" onclick="addAkt()">Aktivit&auml;t hinzuf&uuml;gen</button>
-        <button class="btn btn-secondary" onclick="exportData()">Daten exportieren</button>
+        <button class="btn btn-ghost" onclick="exportData()">Daten exportieren</button>
       </div>
     </div>
   </div>
@@ -66,18 +76,23 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<footer>Sizilien Urlaub Juni 2026</footer>
+<footer></footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/config.js"></script>
+<script src="../shared/data.js"></script>
 <script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
 <script src="../shared/nav.js"></script>
 <script src="aktivitaeten.js"></script>
 <script>
 var currentFilter = 'alle';
+var currentSort = 'standard';
 var aktMap;
 
 var katLabels = {
-  sehenswuerdigkeit: 'Sehensw\u00FCrdigkeit',
+  sehenswuerdigkeit: 'Sehenswuerdigkeit',
   strand: 'Strand',
   restaurant: 'Restaurant',
   ausflug: 'Ausflug'
@@ -88,20 +103,38 @@ var katColors = {
   restaurant: '#c0392b',
   ausflug: '#8e44ad'
 };
+var katIcons = {
+  sehenswuerdigkeit: function() { return Icons.landmark({size: 16}); },
+  strand: function() { return Icons.waves({size: 16}); },
+  restaurant: function() { return Icons.utensils({size: 16}); },
+  ausflug: function() { return Icons.compass({size: 16}); }
+};
 var prioLabels = {
   'must-do': 'Must-Do',
   'nice-to-have': 'Nice-to-have',
   'vielleicht': 'Vielleicht'
 };
 
+// ─── DataStore persistence ───
+function getAktivitaeten() {
+  return DataStore.get('aktivitaeten', AKTIVITAETEN);
+}
+
+function saveAktivitaeten(data) {
+  DataStore.set('aktivitaeten', data);
+}
+
+// ─── Map ───
 function initMap() {
+  var config = SizilienConfig.load();
   if (aktMap) aktMap.remove();
-  aktMap = L.map('akt-map').setView([38.13, 13.35], 11);
+  aktMap = L.map('akt-map').setView([config.mapCenter.lat, config.mapCenter.lng], config.mapZoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '\u00A9 OpenStreetMap', maxZoom: 18
   }).addTo(aktMap);
 
-  AKTIVITAETEN.forEach(function(a) {
+  var items = getAktivitaeten();
+  items.forEach(function(a) {
     if (!a.mapLat || !a.mapLng) return;
     var color = katColors[a.kategorie] || '#1a5276';
     var icon = L.divIcon({
@@ -113,25 +146,27 @@ function initMap() {
       .addTo(aktMap)
       .bindPopup('<div style="font-family:Inter,sans-serif;min-width:180px">' +
         '<strong>' + esc(a.name) + '</strong><br>' +
-        '<span style="color:#666">' + esc(a.ort) + '</span><br>' +
-        '<span style="color:#888;font-size:.85em">' + esc(a.kosten) + ' &middot; ' + esc(a.dauer) + '</span>' +
+        '<span style="color:var(--gray-500)">' + esc(a.ort) + '</span><br>' +
+        '<span style="color:var(--gray-400);font-size:.85em">' + esc(a.kosten) + ' \u00B7 ' + esc(a.dauer) + '</span>' +
       '</div>');
   });
 }
 
+// ─── Filter Bar ───
 function renderFilterBar() {
-  var counts = { alle: AKTIVITAETEN.length };
-  AKTIVITAETEN.forEach(function(a) { counts[a.kategorie] = (counts[a.kategorie] || 0) + 1; });
+  var items = getAktivitaeten();
+  var counts = { alle: items.length };
+  items.forEach(function(a) { counts[a.kategorie] = (counts[a.kategorie] || 0) + 1; });
   var filters = [
-    { key: 'alle', label: 'Alle' },
-    { key: 'sehenswuerdigkeit', label: 'Sehensw\u00FCrdigkeiten' },
-    { key: 'strand', label: 'Str\u00E4nde' },
-    { key: 'restaurant', label: 'Restaurants' },
-    { key: 'ausflug', label: 'Ausfl\u00FCge' }
+    { key: 'alle', label: 'Alle', icon: function() { return Icons.filter({size: 14}); } },
+    { key: 'sehenswuerdigkeit', label: 'Sehenswuerdigkeiten', icon: katIcons.sehenswuerdigkeit },
+    { key: 'strand', label: 'Straende', icon: katIcons.strand },
+    { key: 'restaurant', label: 'Restaurants', icon: katIcons.restaurant },
+    { key: 'ausflug', label: 'Ausfluege', icon: katIcons.ausflug }
   ];
   document.getElementById('filter-bar').innerHTML = filters.map(function(f) {
     var c = counts[f.key] || 0;
-    return '<button class="filter-btn' + (currentFilter === f.key ? ' active' : '') + '" onclick="filterBy(\'' + f.key + '\')" title="' + f.label + ' anzeigen">' + f.label + ' (' + c + ')</button>';
+    return '<button class="filter-btn' + (currentFilter === f.key ? ' active' : '') + '" onclick="filterBy(\'' + f.key + '\')" title="' + f.label + ' anzeigen">' + f.icon() + ' ' + f.label + ' (' + c + ')</button>';
   }).join('');
 }
 
@@ -141,46 +176,94 @@ function filterBy(kat) {
   renderCards();
 }
 
+// ─── Cards ───
 function renderCards() {
-  var filtered = currentFilter === 'alle' ? AKTIVITAETEN : AKTIVITAETEN.filter(function(a) { return a.kategorie === currentFilter; });
+  var items = getAktivitaeten();
+  var filtered = currentFilter === 'alle' ? items : items.filter(function(a) { return a.kategorie === currentFilter; });
 
   if (filtered.length === 0) {
-    document.getElementById('akt-grid').innerHTML = '<div class="empty-state"><div class="icon">&#128506;&#65039;</div><h3>Keine Aktivit\u00E4ten in dieser Kategorie</h3></div>';
+    document.getElementById('akt-grid').innerHTML =
+      '<div class="empty-state">' +
+        '<div class="icon">' + Icons.compass({size: 48}) + '</div>' +
+        '<h3>Keine Aktivitaeten in dieser Kategorie</h3>' +
+        '<p>Fuege eine neue Aktivitaet ueber das Formular unten hinzu.</p>' +
+      '</div>';
     return;
   }
 
+  if (currentSort === 'beliebtheit') {
+    filtered = filtered.slice().sort(function(a, b) {
+      return (b.stimmen || 0) - (a.stimmen || 0);
+    });
+  }
+
   document.getElementById('akt-grid').innerHTML = filtered.map(function(a) {
+    var katIcon = katIcons[a.kategorie] ? katIcons[a.kategorie]() : '';
+
     return '<div class="akt-card">' +
       '<div class="akt-card-header">' +
-        '<h3>' + esc(a.name) + '</h3>' +
+        '<div style="display:flex;align-items:start;justify-content:space-between;gap:8px">' +
+          '<h3>' + esc(a.name) + '</h3>' +
+          '<button class="btn-icon" onclick="deleteAkt(' + a.id + ')" title="Aktivitaet loeschen" aria-label="' + esc(a.name) + ' loeschen">' + Icons.trash({size: 16}) + '</button>' +
+        '</div>' +
         '<div class="akt-meta">' +
-          '<span>' + esc(a.ort) + '</span>' +
-          '<span>' + esc(a.kosten) + '</span>' +
-          '<span>' + esc(a.dauer) + '</span>' +
+          '<span>' + Icons.mapPin({size: 14}) + ' ' + esc(a.ort) + '</span>' +
+          '<span>' + Icons.euro({size: 14}) + ' ' + esc(a.kosten) + '</span>' +
+          '<span>' + Icons.clock({size: 14}) + ' ' + esc(a.dauer) + '</span>' +
         '</div>' +
       '</div>' +
       '<div class="akt-card-body">' +
         '<p>' + esc(a.beschreibung) + '</p>' +
         '<div class="akt-footer">' +
           '<div>' +
-            '<span class="kategorie-badge kat-' + a.kategorie + '">' + katLabels[a.kategorie] + '</span> ' +
+            '<span class="kategorie-badge kat-' + a.kategorie + '">' + katIcon + ' ' + katLabels[a.kategorie] + '</span> ' +
             '<span class="priority-badge priority-' + a.prioritaet + '">' + prioLabels[a.prioritaet] + '</span>' +
           '</div>' +
-          (a.vorgeschlagenVon ? '<span style="font-size:.82em;color:var(--text-light)">von ' + esc(a.vorgeschlagenVon) + '</span>' : '') +
-          (a.link ? '<a href="' + esc(a.link) + '" target="_blank" style="font-size:.85em">Mehr &rarr;</a>' : '') +
+          (a.vorgeschlagenVon ? '<span style="font-size:.82em;color:var(--text-light)">' + Icons.user({size: 12}) + ' von ' + esc(a.vorgeschlagenVon) + '</span>' : '') +
+          (a.link ? '<a href="' + esc(a.link) + '" target="_blank" style="font-size:.85em;display:inline-flex;align-items:center;gap:4px">' + Icons.externalLink({size: 14}) + ' Mehr</a>' : '') +
         '</div>' +
       '</div>' +
     '</div>';
   }).join('');
 }
 
+function sortBy(mode) {
+  currentSort = mode;
+  document.querySelectorAll('.sort-btn').forEach(function(b) { b.classList.remove('active'); });
+  event.target.classList.add('active');
+  renderCards();
+}
+
+// ─── Delete ───
+function deleteAkt(id) {
+  var items = getAktivitaeten();
+  var item = items.find(function(a) { return a.id === id; });
+  var name = item ? item.name : 'Aktivitaet';
+
+  confirmModal(
+    'Aktivitaet loeschen',
+    'Moechtest du "' + name + '" wirklich loeschen? Das kann nicht rueckgaengig gemacht werden.',
+    function() {
+      DataStore.remove('aktivitaeten', id, AKTIVITAETEN);
+      renderFilterBar();
+      renderCards();
+      initMap();
+      toast('"' + name + '" geloescht.');
+    },
+    { danger: true, confirmLabel: 'Loeschen', cancelLabel: 'Abbrechen' }
+  );
+}
+
+// ─── Add ───
 function addAkt() {
   clearValidation();
-  if (!validateRequired('f-name', 'Bitte einen Namen eingeben')) { toast('Bitte Pflichtfelder ausf\u00FCllen', 'error'); return; }
+  if (!validateRequired('f-name', 'Bitte einen Namen eingeben')) {
+    toast('Bitte Pflichtfelder ausfuellen', 'error');
+    return;
+  }
   var name = document.getElementById('f-name').value.trim();
 
-  AKTIVITAETEN.push({
-    id: AKTIVITAETEN.length + 1,
+  var newItem = {
     name: name,
     kategorie: document.getElementById('f-kategorie').value,
     ort: document.getElementById('f-ort').value.trim(),
@@ -192,16 +275,30 @@ function addAkt() {
     prioritaet: document.getElementById('f-prio').value,
     mapLat: parseFloat(document.getElementById('f-lat').value) || null,
     mapLng: parseFloat(document.getElementById('f-lng').value) || null
-  });
+  };
+
+  DataStore.add('aktivitaeten', newItem, AKTIVITAETEN);
+
+  // Reset form
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-ort').value = '';
+  document.getElementById('f-kosten').value = '';
+  document.getElementById('f-dauer').value = '';
+  document.getElementById('f-beschreibung').value = '';
+  document.getElementById('f-link').value = '';
+  document.getElementById('f-von').value = '';
+  document.getElementById('f-lat').value = '';
+  document.getElementById('f-lng').value = '';
 
   renderFilterBar();
   renderCards();
   initMap();
-  toast('"' + name + '" hinzugef\u00FCgt!');
+  toast('"' + name + '" hinzugefuegt!');
 }
 
+// ─── Export ───
 function exportData() {
-  var json = JSON.stringify(AKTIVITAETEN, null, 2);
+  var json = DataStore.exportJSON('aktivitaeten', AKTIVITAETEN);
   var blob = new Blob(['const AKTIVITAETEN = ' + json + ';\n'], { type: 'application/javascript' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -210,9 +307,26 @@ function exportData() {
   toast('aktivitaeten.js exportiert!');
 }
 
+// ─── Spezialitaeten ───
+function renderSpezialitaeten() {
+  if (typeof SPEZIALITAETEN === 'undefined') return;
+  document.getElementById('spez-grid').innerHTML = SPEZIALITAETEN.map(function(s) {
+    return '<div class="spez-card">' +
+      '<div class="spez-card-header">' +
+        '<span class="spez-icon">' + s.bild + '</span>' +
+        '<h4>' + esc(s.name) + '</h4>' +
+      '</div>' +
+      '<p>' + esc(s.beschreibung) + '</p>' +
+      '<span class="spez-preis">' + esc(s.preis) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+// ─── Init ───
 initMap();
 renderFilterBar();
 renderCards();
+renderSpezialitaeten();
 </script>
 </body>
 </html>

@@ -84,3 +84,8 @@ Jede neue Seite muss:
 - **Feedback geben** — Toast bei Aktionen, Hover-States, Loading-States
 - **Fehler vermeiden** — Validierung vor Submit, Bestätigung bei destruktiven Aktionen
 - **Für die Gruppe** — denke daran: 5 Freunde planen zusammen einen Urlaub, kein Enterprise-Tool
+
+### 7. wenig hardgecoded werte nur da wo sinnvoll
+- Ale sachn die eingetragen sidn sollen auch änderbar sein (da sowo sinvoll z.B. persoheen anzahl ) und sich dynamisch verhalten speichere dabei alles in json datenbanken usw... finde eienn guten weg die schen verädnern zu könne es sollen auch bei lsiten von schen neue schen hinzufügbr sien oder akktuelle entferenbar z.B. bei totdo , packlsite usw.... 
+
+Speichere alle dynamishcen werte ineiner json datenbank also json dateien suw.... 

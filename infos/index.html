@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Praktische Infos - Sizilien Juni 2026</title>
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1"></div>
+
+<header>
+  <h1>Praktische Infos</h1>
+  <p>Alles Wichtige f&uuml;r den Sizilien-Urlaub &middot; Juni 2026</p>
+</header>
+
+<div class="container">
+
+  <!-- ─── Notfallnummern ─── -->
+  <h2>&#x1F6A8; Notfallnummern</h2>
+  <p class="section-intro">Wichtige Nummern f&uuml;r den Ernstfall &mdash; am besten im Handy abspeichern!</p>
+  <div class="notfall-grid" id="notfall-grid"></div>
+
+  <!-- ─── Dokumente Checkliste ─── -->
+  <h2>&#x1F4CB; Dokumente-Check</h2>
+  <p class="section-intro">Hast du alles dabei? Hake ab, was du schon eingepackt hast.</p>
+  <div class="dokumente-list" id="dokumente-list"></div>
+
+  <!-- ─── Lokale Tipps ─── -->
+  <h2>&#x1F4A1; Lokale Tipps</h2>
+  <p class="section-intro">Insider-Wissen f&uuml;r einen reibungslosen Aufenthalt auf Sizilien.</p>
+  <div class="tipps-grid" id="tipps-grid"></div>
+
+  <!-- ─── Wetter ─── -->
+  <h2>&#x2600;&#xFE0F; Wetter im Juni</h2>
+  <p class="section-intro">Was euch klimatisch auf Sizilien erwartet.</p>
+  <div class="wetter-widget" id="wetter-widget"></div>
+
+  <!-- ─── Nützliche Sätze ─── -->
+  <h2>&#x1F1EE;&#x1F1F9; N&uuml;tzliche S&auml;tze</h2>
+  <p class="section-intro">Ein paar Worte Italienisch &ouml;ffnen T&uuml;ren &mdash; und Herzen.</p>
+  <div class="saetze-wrapper" id="saetze-wrapper"></div>
+
+  <!-- ─── Spezialitäten ─── -->
+  <h2>&#x1F35D; Sizilianische Spezialit&auml;ten</h2>
+  <p class="section-intro">Diese Gerichte m&uuml;sst ihr unbedingt probieren!</p>
+  <div class="food-grid" id="food-grid"></div>
+
+  <!-- ─── Entfernungen ─── -->
+  <h2>&#x1F697; Entfernungen ab Palermo</h2>
+  <p class="section-intro">Fahrzeit und Kosten zu den wichtigsten Ausflugszielen. Klick auf eine Spalte zum Sortieren.</p>
+  <div class="entfernungen-wrapper" id="entfernungen-wrapper"></div>
+
+</div>
+
+<footer>Sizilien Urlaub Juni 2026 &middot; Praktische Infos &middot; Stand: M&auml;rz 2026</footer>
+
+<script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
+<script src="../shared/nav.js"></script>
+<script src="infos.js"></script>
+<script>
+// ─── Notfallnummern rendern ───
+(function() {
+  var html = '';
+  NOTFALLNUMMERN.forEach(function(n, i) {
+    var colorClass = i < 4 ? '' : (i < 6 ? ' orange' : ' blue');
+    html += '<div class="notfall-card' + colorClass + '">';
+    html += '<div class="notfall-icon">' + n.icon + '</div>';
+    html += '<div class="notfall-info">';
+    html += '<div class="notfall-name">' + esc(n.name) + '</div>';
+    html += '<div class="notfall-beschreibung">' + esc(n.beschreibung) + '</div>';
+    html += '</div>';
+    if (n.nummer) {
+      var tel = n.nummer.replace(/[\s\-]/g, '');
+      html += '<a href="tel:' + tel + '" class="notfall-nummer">' + esc(n.nummer) + '</a>';
+    } else {
+      html += '<span class="notfall-no-phone">' + esc(n.beschreibung) + '</span>';
+    }
+    html += '</div>';
+  });
+  document.getElementById('notfall-grid').innerHTML = html;
+})();
+
+// ─── Dokumente Checkliste ───
+(function() {
+  var STORAGE_KEY = 'sizilien2026_infos_docs';
+
+  function loadChecked() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch(e) {
+      return {};
+    }
+  }
+
+  function saveChecked(obj) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  }
+
+  function render() {
+    var checked = loadChecked();
+    var total = DOKUMENTE_CHECK.length;
+    var done = 0;
+
+    var items = '';
+    DOKUMENTE_CHECK.forEach(function(doc, i) {
+      var isChecked = !!checked[i];
+      if (isChecked) done++;
+      var badge = doc.pflicht
+        ? '<span class="dok-pflicht">Pflicht</span>'
+        : '<span class="dok-optional">Optional</span>';
+      items += '<div class="dok-item' + (isChecked ? ' checked' : '') + '">' +
+        '<input type="checkbox" id="dok-' + i + '"' + (isChecked ? ' checked' : '') + '>' +
+        '<label for="dok-' + i + '">' + esc(doc.name) + ' ' + badge + '</label>' +
+        '</div>';
+    });
+
+    var pct = total > 0 ? Math.round(done / total * 100) : 0;
+    var progressColor = pct === 100 ? 'var(--green)' : (pct > 50 ? 'var(--accent)' : 'var(--primary-light)');
+
+    var html = '<div class="dokumente-progress">' +
+      '<div class="dokumente-progress-text">' +
+        '<span>Fortschritt</span>' +
+        '<span class="count">' + done + ' / ' + total + ' erledigt</span>' +
+      '</div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%;background:' + progressColor + '"></div></div>' +
+      '</div>' +
+      items +
+      '<div class="dok-reset">' +
+        '<button class="btn btn-sm btn-secondary" id="dok-reset-btn">Zur\u00fccksetzen</button>' +
+      '</div>';
+
+    document.getElementById('dokumente-list').innerHTML = html;
+
+    // Event listeners
+    DOKUMENTE_CHECK.forEach(function(doc, i) {
+      var cb = document.getElementById('dok-' + i);
+      if (cb) {
+        cb.addEventListener('change', function() {
+          var c = loadChecked();
+          if (this.checked) {
+            c[i] = true;
+          } else {
+            delete c[i];
+          }
+          saveChecked(c);
+          render();
+        });
+      }
+    });
+
+    var resetBtn = document.getElementById('dok-reset-btn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function() {
+        localStorage.removeItem(STORAGE_KEY);
+        render();
+        toast('Checkliste zur\u00fcckgesetzt');
+      });
+    }
+  }
+
+  render();
+})();
+
+// ─── Lokale Tipps (Collapsible) ───
+(function() {
+  var html = '';
+  LOKALE_TIPPS.forEach(function(kat, i) {
+    html += '<div class="tipp-card" data-tipp="' + i + '">';
+    html += '<button class="tipp-header" aria-expanded="false" aria-controls="tipp-body-' + i + '">';
+    html += '<div class="tipp-header-icon">' + kat.icon + '</div>';
+    html += '<span class="tipp-header-text">' + esc(kat.kategorie) + '</span>';
+    html += '<span class="tipp-header-count">' + kat.tipps.length + ' Tipps</span>';
+    html += '<span class="tipp-chevron">\u25BC</span>';
+    html += '</button>';
+    html += '<div class="tipp-body" id="tipp-body-' + i + '">';
+    html += '<div class="tipp-body-inner"><ul>';
+    kat.tipps.forEach(function(t) {
+      html += '<li>' + esc(t) + '</li>';
+    });
+    html += '</ul></div></div></div>';
+  });
+  document.getElementById('tipps-grid').innerHTML = html;
+
+  // Toggle logic
+  document.getElementById('tipps-grid').addEventListener('click', function(e) {
+    var header = e.target.closest('.tipp-header');
+    if (!header) return;
+    var card = header.closest('.tipp-card');
+    var body = card.querySelector('.tipp-body');
+    var isOpen = card.classList.contains('open');
+
+    if (isOpen) {
+      card.classList.remove('open');
+      body.style.maxHeight = '0';
+      header.setAttribute('aria-expanded', 'false');
+    } else {
+      card.classList.add('open');
+      body.style.maxHeight = body.scrollHeight + 'px';
+      header.setAttribute('aria-expanded', 'true');
+    }
+  });
+
+  // Open first card by default
+  var firstCard = document.querySelector('.tipp-card');
+  if (firstCard) {
+    firstCard.classList.add('open');
+    var firstBody = firstCard.querySelector('.tipp-body');
+    var firstHeader = firstCard.querySelector('.tipp-header');
+    if (firstBody) firstBody.style.maxHeight = firstBody.scrollHeight + 'px';
+    if (firstHeader) firstHeader.setAttribute('aria-expanded', 'true');
+  }
+})();
+
+// ─── Wetter Widget ───
+(function() {
+  var w = WETTER_JUNI;
+  // Temperature bar position (scale 0-40)
+  var minPos = (w.min / 40) * 100;
+  var maxPos = (w.max / 40) * 100;
+  var avgPos = ((w.min + w.max) / 2 / 40) * 100;
+
+  var html = '<div class="wetter-header">' +
+    '<span class="sun-icon">\u2600\uFE0F</span>' +
+    '<h3>Sizilien im Juni</h3>' +
+    '</div>';
+
+  html += '<div class="wetter-stats">' +
+    '<div class="wetter-stat">' +
+      '<div class="wetter-stat-icon">\u{1F321}\uFE0F</div>' +
+      '<div class="wetter-stat-value">' + w.min + '\u2013' + w.max + '\u00B0C</div>' +
+      '<div class="wetter-stat-label">Temperatur</div>' +
+    '</div>' +
+    '<div class="wetter-stat">' +
+      '<div class="wetter-stat-icon">\u{1F30A}</div>' +
+      '<div class="wetter-stat-value">' + w.wassertemp + '\u00B0C</div>' +
+      '<div class="wetter-stat-label">Wassertemperatur</div>' +
+    '</div>' +
+    '<div class="wetter-stat">' +
+      '<div class="wetter-stat-icon">\u2600\uFE0F</div>' +
+      '<div class="wetter-stat-value">' + w.sonnenstunden + 'h</div>' +
+      '<div class="wetter-stat-label">Sonnenstunden / Tag</div>' +
+    '</div>' +
+    '<div class="wetter-stat">' +
+      '<div class="wetter-stat-icon">\u{1F327}\uFE0F</div>' +
+      '<div class="wetter-stat-value">' + w.regentage + '</div>' +
+      '<div class="wetter-stat-label">Regentage im Monat</div>' +
+    '</div>' +
+  '</div>';
+
+  html += '<div class="temp-bar-wrap">' +
+    '<div class="temp-bar-labels">' +
+      '<span class="min">' + w.min + '\u00B0C Nacht</span>' +
+      '<span class="max">' + w.max + '\u00B0C Tag</span>' +
+    '</div>' +
+    '<div class="temp-bar">' +
+      '<div class="temp-bar-indicator" style="left:' + minPos + '%"></div>' +
+      '<div class="temp-bar-indicator" style="left:' + maxPos + '%"></div>' +
+    '</div>' +
+  '</div>';
+
+  html += '<div class="wetter-empfehlung">' +
+    '<strong>\u{1F45A} Packtipp:</strong> ' + esc(w.empfehlung) +
+  '</div>';
+
+  document.getElementById('wetter-widget').innerHTML = html;
+})();
+
+// ─── Nützliche Sätze ───
+(function() {
+  // Group by category
+  var kategorien = [];
+  var katMap = {};
+  NUETZLICHE_SAETZE.forEach(function(s) {
+    if (!katMap[s.kategorie]) {
+      katMap[s.kategorie] = [];
+      kategorien.push(s.kategorie);
+    }
+    katMap[s.kategorie].push(s);
+  });
+
+  var katIcons = {
+    'Begr\u00fc\u00dfung': '\u{1F44B}',
+    'Restaurant': '\u{1F37D}\uFE0F',
+    'Einkaufen': '\u{1F6CD}\uFE0F',
+    'Notfall': '\u{1F6A8}',
+    'Allgemein': '\u{1F4AC}'
+  };
+
+  var html = '';
+  kategorien.forEach(function(kat, ki) {
+    var icon = katIcons[kat] || '\u{1F4AC}';
+    var isLast = ki === kategorien.length - 1;
+    html += '<div class="saetze-kategorie-header">' + icon + ' ' + esc(kat) + '</div>';
+    html += '<table class="saetze-table' + (isLast ? ' saetze-table-last' : '') + '">';
+    if (ki === 0) {
+      html += '<thead><tr>' +
+        '<th>Deutsch</th>' +
+        '<th>Italienisch</th>' +
+        '<th>Aussprache</th>' +
+      '</tr></thead>';
+    }
+    html += '<tbody>';
+    katMap[kat].forEach(function(s) {
+      html += '<tr>' +
+        '<td class="col-de">' + esc(s.deutsch) + '</td>' +
+        '<td class="col-it">' + esc(s.italienisch) + '</td>' +
+        '<td class="col-aus">' + esc(s.aussprache) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+  });
+
+  document.getElementById('saetze-wrapper').innerHTML = html;
+})();
+
+// ─── Spezialitäten ───
+(function() {
+  var html = '';
+  SPEZIALITAETEN.forEach(function(s) {
+    html += '<div class="food-card">';
+    html += '<div class="food-card-header">';
+    html += '<span class="food-emoji">' + s.bild + '</span>';
+    html += '<div class="food-name">' + esc(s.name) + '</div>';
+    html += '</div>';
+    html += '<div class="food-card-body">';
+    html += '<div class="food-beschreibung">' + esc(s.beschreibung) + '</div>';
+    html += '<span class="food-preis">' + esc(s.preis) + '</span>';
+    html += '</div>';
+    html += '</div>';
+  });
+  document.getElementById('food-grid').innerHTML = html;
+})();
+
+// ─── Entfernungen (sortierbar) ───
+(function() {
+  var sortCol = 'autoMinuten';
+  var sortAsc = true;
+
+  var columns = [
+    { key: 'ziel',         label: 'Ziel',          sortable: true  },
+    { key: 'autoKm',       label: 'km',             sortable: true  },
+    { key: 'autoMinuten',  label: 'Auto (Min.)',    sortable: true  },
+    { key: 'zugMinuten',   label: 'Zug (Min.)',     sortable: true  },
+    { key: 'zugPreis',     label: 'Zug Preis',      sortable: true  }
+  ];
+
+  function formatMin(min) {
+    if (min === null) return '\u2013';
+    var h = Math.floor(min / 60);
+    var m = min % 60;
+    if (h === 0) return m + ' min';
+    return h + 'h ' + (m > 0 ? m + 'min' : '');
+  }
+
+  function render() {
+    var sorted = ENTFERNUNGEN.slice().sort(function(a, b) {
+      var va = a[sortCol];
+      var vb = b[sortCol];
+      // Handle null / string values
+      if (va === null) va = 9999;
+      if (vb === null) vb = 9999;
+      if (typeof va === 'string') {
+        va = va.replace(/[^\d,\.]/g, '').replace(',', '.');
+        vb = vb.replace(/[^\d,\.]/g, '').replace(',', '.');
+        va = parseFloat(va) || 9999;
+        vb = parseFloat(vb) || 9999;
+      }
+      return sortAsc ? va - vb : vb - va;
+    });
+
+    var html = '<table class="entfernungen-table">';
+    html += '<thead><tr>';
+    columns.forEach(function(col) {
+      var isSorted = sortCol === col.key;
+      var arrow = isSorted ? (sortAsc ? '\u25B2' : '\u25BC') : '\u25B4';
+      html += '<th class="' + (isSorted ? 'sorted' : '') + '" data-sort="' + col.key + '">' +
+        col.label + ' <span class="sort-icon">' + arrow + '</span></th>';
+    });
+    html += '</tr></thead><tbody>';
+
+    sorted.forEach(function(e) {
+      html += '<tr>' +
+        '<td class="ziel-cell">' + esc(e.ziel) + '</td>' +
+        '<td class="auto-cell">' + e.autoKm + ' km</td>' +
+        '<td class="auto-cell">' + formatMin(e.autoMinuten) + '</td>' +
+        '<td class="zug-cell">' + formatMin(e.zugMinuten) + '</td>' +
+        '<td class="preis-cell">' + esc(e.zugPreis) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    html += '<p class="entfernungen-hint">Alle Angaben sind Richtwerte. Fahrtzeiten k\u00f6nnen je nach Verkehr und Route variieren.</p>';
+
+    document.getElementById('entfernungen-wrapper').innerHTML = html;
+
+    // Sort click handlers
+    document.querySelectorAll('.entfernungen-table th[data-sort]').forEach(function(th) {
+      th.addEventListener('click', function() {
+        var col = this.getAttribute('data-sort');
+        if (sortCol === col) {
+          sortAsc = !sortAsc;
+        } else {
+          sortCol = col;
+          sortAsc = true;
+        }
+        render();
+      });
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

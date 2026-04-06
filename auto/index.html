@@ -9,6 +9,7 @@
 </head>
 <body>
 
+<a href="#main-content" class="skip-link">Zum Inhalt springen</a>
 <div id="site-nav" data-depth="1" data-title=""></div>
 
 <header>
@@ -16,10 +17,10 @@
   <p>Mietwagen, Fahrer &amp; &ouml;ffentliche Verkehrsmittel</p>
 </header>
 
-<div class="container">
+<div class="container" id="main-content">
 
   <h2>Fahrer-&Uuml;bersicht</h2>
-  <p style="color:var(--text-light);margin-bottom:15px;font-size:.9em">Klicke auf einen Namen, um die Daten zu bearbeiten. &Auml;nderungen werden beim Exportieren gespeichert.</p>
+  <p class="text-muted text-sm" style="margin-bottom:15px">Klicke auf einen Namen, um die Daten zu bearbeiten. &Auml;nderungen werden automatisch gespeichert.</p>
   <div class="driver-grid" id="driver-grid"></div>
 
   <h2>Mietwagen-Vergleich</h2>
@@ -71,7 +72,7 @@
       </div>
       <div class="form-group">
         <label>Anzahl Personen</label>
-        <input id="c-personen" type="number" value="5" min="1" oninput="calcSplit()">
+        <input id="c-personen" type="number" min="1" oninput="calcSplit()">
       </div>
     </div>
     <div class="result" id="split-result">
@@ -86,140 +87,205 @@
 </div>
 
 <div class="toast" id="toast"></div>
-<footer>Sizilien Urlaub Juni 2026</footer>
+<footer></footer>
 
+<script src="../shared/icons.js"></script>
+<script src="../shared/config.js"></script>
+<script src="../shared/data.js"></script>
 <script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
 <script src="../shared/nav.js"></script>
 <script src="auto.js"></script>
 <script>
-function renderDrivers() {
-  document.getElementById('driver-grid').innerHTML = FAHRER.map(function(f, i) {
-    return '<div class="driver-card">' +
-      '<div class="driver-icon">&#128100;</div>' +
-      '<h3>' + esc(f.name) + '</h3>' +
-      '<div class="driver-status">' +
-        '<div>' + (f.fuehrerschein ? '<span class="driver-check">&#10004; F\u00FChrerschein</span>' : '<span class="driver-cross">&#10008; Kein F\u00FChrerschein</span>') + '</div>' +
-        '<div>' + (f.faehrtImAusland ? '<span class="driver-check">&#10004; F\u00E4hrt im Ausland</span>' : '<span class="driver-cross">&#10008; F\u00E4hrt nicht im Ausland</span>') + '</div>' +
-      '</div>' +
-      (f.notizen ? '<div style="margin-top:8px;font-size:.82em;color:var(--text-light)">' + esc(f.notizen) + '</div>' : '') +
-    '</div>';
-  }).join('');
-}
+(function() {
+  var config = SizilienConfig.load();
+  var personenCount = config.personen || SizilienConfig.DEFAULTS.personen;
 
-function renderMietwagen() {
-  if (MIETWAGEN.length === 0) {
-    document.getElementById('mietwagen-list').innerHTML =
-      '<div class="empty-state"><div class="icon">&#128663;</div><h3>Noch keine Mietwagen</h3><p>F\u00FCge unten die erste Option hinzu</p><a href="#mietwagen-form" class="btn btn-primary btn-sm">+ Mietwagen hinzuf\u00FCgen</a></div>';
-    return;
-  }
+  // ─── Set default person count in cost splitter ───
+  document.getElementById('c-personen').value = personenCount;
 
-  var html = '<table class="data-table"><thead><tr>' +
-    '<th>Anbieter</th><th>Fahrzeug</th><th>Zeitraum</th><th>Tage</th><th>Preis</th><th>\u20AC/Tag</th><th>Versicherung</th><th>Status</th><th>Link</th>' +
-  '</tr></thead><tbody>';
-
-  MIETWAGEN.sort(function(a,b) { return a.preis - b.preis; }).forEach(function(m) {
-    var tage = m.tage || Math.round((new Date(m.bis) - new Date(m.von)) / 86400000);
-    var proTag = tage > 0 ? (m.preis / tage).toFixed(0) : '-';
-    var statusCls = 'status status-' + m.status;
-    var statusLabel = m.status === 'gebucht' ? 'Gebucht' : 'Option';
-    html += '<tr>' +
-      '<td><strong>' + esc(m.anbieter) + '</strong></td>' +
-      '<td>' + esc(m.fahrzeugtyp || m.kategorie || '-') + '</td>' +
-      '<td>' + fmt(m.von) + ' - ' + fmt(m.bis) + '</td>' +
-      '<td>' + tage + '</td>' +
-      '<td style="font-weight:700;color:var(--green)">' + m.preis + ' \u20AC</td>' +
-      '<td>' + proTag + ' \u20AC</td>' +
-      '<td>' + esc(m.versicherung || '-') + '</td>' +
-      '<td><span class="' + statusCls + '">' + statusLabel + '</span></td>' +
-      '<td>' + (m.link ? '<a href="' + esc(m.link) + '" target="_blank">Ansehen</a>' : '-') + '</td>' +
-    '</tr>';
-  });
-  html += '</tbody></table>';
-  document.getElementById('mietwagen-list').innerHTML = html;
-}
-
-function renderTransport() {
-  var keys = Object.keys(OEPNV_INFO);
-  var icons = { zug: '&#128646;', bus: '&#128652;', taxi: '&#128661;', transfer: '&#9992;&#65039;' };
-  document.getElementById('transport-grid').innerHTML = keys.map(function(k) {
-    var t = OEPNV_INFO[k];
-    return '<div class="transport-card">' +
-      '<h3>' + (icons[k] || '') + ' ' + esc(t.titel) + '</h3>' +
-      '<p>' + esc(t.beschreibung) + '</p>' +
-      (t.link ? '<a href="' + esc(t.link) + '" target="_blank">Mehr Infos &rarr;</a>' : '') +
-    '</div>';
-  }).join('');
-}
-
-function addMietwagen() {
-  clearValidation();
-  var ok = true;
-  ok = validateRequired('f-anbieter', 'Anbieter ist erforderlich') & ok;
-  ok = validateRequired('f-von', 'Startdatum ist erforderlich') & ok;
-  ok = validateRequired('f-bis', 'Enddatum ist erforderlich') & ok;
-  ok = validateRequired('f-preis', 'Preis ist erforderlich') & ok;
-
-  if (!ok) {
-    toast('Bitte Pflichtfelder ausf\u00FCllen', 'error');
-    return;
-  }
-
-  var anbieter = document.getElementById('f-anbieter').value.trim();
-  var von = document.getElementById('f-von').value;
-  var bis = document.getElementById('f-bis').value;
-  var preis = parseFloat(document.getElementById('f-preis').value);
-
-  var tage = Math.round((new Date(bis) - new Date(von)) / 86400000);
-
-  MIETWAGEN.push({
-    id: MIETWAGEN.length + 1,
-    anbieter: anbieter,
-    fahrzeugtyp: document.getElementById('f-fahrzeug').value.trim(),
-    kategorie: document.getElementById('f-kategorie').value,
-    abholung: document.getElementById('f-abholung').value.trim(),
-    rueckgabe: document.getElementById('f-rueckgabe').value.trim(),
-    von: von,
-    bis: bis,
-    tage: tage,
-    preis: preis,
-    versicherung: document.getElementById('f-versicherung').value.trim(),
-    extras: document.getElementById('f-extras').value.trim(),
-    link: document.getElementById('f-link').value.trim(),
-    status: document.getElementById('f-status').value,
-    notizen: document.getElementById('f-notizen').value.trim()
+  // ─── Fahrer direkt aus Config personenDaten lesen ───
+  var fahrer = (config.personenDaten || []).map(function(p, i) {
+    return {
+      id: i + 1,
+      name: p.name,
+      fuehrerschein: !!p.fuehrerschein,
+      faehrtImAusland: !!p.faehrtImAusland,
+      notizen: p.notizen || ''
+    };
   });
 
+  // ─── Default MIETWAGEN ───
+  var DEFAULT_MIETWAGEN = (typeof MIETWAGEN !== 'undefined') ? MIETWAGEN : [];
+  var mietwagen = DataStore.get('mietwagen', DEFAULT_MIETWAGEN);
+
+  // ─── Render Fahrer ───
+  function renderDrivers() {
+    document.getElementById('driver-grid').innerHTML = fahrer.map(function(f) {
+      return '<div class="driver-card">' +
+        '<div class="driver-icon">' + Icons.user({size: 40}) + '</div>' +
+        '<h3>' + esc(f.name) + '</h3>' +
+        '<div class="driver-status">' +
+          '<div>' + (f.fuehrerschein
+            ? '<span class="driver-check">' + Icons.check({size: 14}) + ' F\u00FChrerschein</span>'
+            : '<span class="driver-cross">' + Icons.x({size: 14}) + ' Kein F\u00FChrerschein</span>') +
+          '</div>' +
+          '<div>' + (f.faehrtImAusland
+            ? '<span class="driver-check">' + Icons.check({size: 14}) + ' F\u00E4hrt im Ausland</span>'
+            : '<span class="driver-cross">' + Icons.x({size: 14}) + ' F\u00E4hrt nicht im Ausland</span>') +
+          '</div>' +
+        '</div>' +
+        (f.notizen ? '<div style="margin-top:8px;font-size:.82em;color:var(--text-light)">' + esc(f.notizen) + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  // ─── Render Mietwagen ───
+  function renderMietwagen() {
+    mietwagen = DataStore.get('mietwagen', DEFAULT_MIETWAGEN);
+
+    if (!mietwagen || mietwagen.length === 0) {
+      document.getElementById('mietwagen-list').innerHTML =
+        '<div class="empty-state">' +
+          '<div class="icon">' + Icons.car({size: 48}) + '</div>' +
+          '<h3>Noch keine Mietwagen</h3>' +
+          '<p>F\u00FCge unten die erste Option hinzu</p>' +
+          '<a href="#mietwagen-form" class="btn btn-primary btn-sm">+ Mietwagen hinzuf\u00FCgen</a>' +
+        '</div>';
+      return;
+    }
+
+    var sorted = mietwagen.slice().sort(function(a, b) { return a.preis - b.preis; });
+    var html = '<div class="table-wrapper"><table class="data-table"><thead><tr>' +
+      '<th>Anbieter</th><th>Fahrzeug</th><th>Zeitraum</th><th>Tage</th><th>Preis</th><th>\u20AC/Tag</th><th>Versicherung</th><th>Status</th><th>Link</th><th></th>' +
+    '</tr></thead><tbody>';
+
+    sorted.forEach(function(m) {
+      var tage = m.tage || Math.round((new Date(m.bis) - new Date(m.von)) / 86400000);
+      var proTag = tage > 0 ? (m.preis / tage).toFixed(0) : '-';
+      html += '<tr>' +
+        '<td><strong>' + esc(m.anbieter) + '</strong></td>' +
+        '<td>' + esc(m.fahrzeugtyp || m.kategorie || '-') + '</td>' +
+        '<td>' + fmt(m.von) + ' - ' + fmt(m.bis) + '</td>' +
+        '<td>' + tage + '</td>' +
+        '<td style="font-weight:700;color:var(--success)">' + m.preis + ' \u20AC</td>' +
+        '<td>' + proTag + ' \u20AC</td>' +
+        '<td>' + esc(m.versicherung || '-') + '</td>' +
+        '<td>' + statusBadge(m.status) + '</td>' +
+        '<td>' + (m.link ? '<a href="' + esc(m.link) + '" target="_blank">' + Icons.externalLink({size: 14}) + ' Ansehen</a>' : '-') + '</td>' +
+        '<td><button class="btn-icon" onclick="deleteMietwagen(' + m.id + ')" aria-label="L\u00F6schen" title="L\u00F6schen">' + Icons.trash({size: 16}) + '</button></td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('mietwagen-list').innerHTML = html;
+  }
+
+  // ─── Render Transport ───
+  function renderTransport() {
+    var keys = Object.keys(OEPNV_INFO);
+    var icons = {
+      zug: Icons.train({size: 20}),
+      bus: Icons.bus({size: 20}),
+      taxi: Icons.car({size: 20}),
+      transfer: Icons.plane({size: 20})
+    };
+    document.getElementById('transport-grid').innerHTML = keys.map(function(k) {
+      var t = OEPNV_INFO[k];
+      return '<div class="transport-card">' +
+        '<h3>' + (icons[k] || '') + ' ' + esc(t.titel) + '</h3>' +
+        '<p>' + esc(t.beschreibung) + '</p>' +
+        (t.link ? '<a href="' + esc(t.link) + '" target="_blank">' + Icons.externalLink({size: 14}) + ' Mehr Infos</a>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  // ─── Add Mietwagen ───
+  window.addMietwagen = function() {
+    clearValidation();
+    var ok = true;
+    ok = validateRequired('f-anbieter', 'Anbieter ist erforderlich') & ok;
+    ok = validateRequired('f-von', 'Startdatum ist erforderlich') & ok;
+    ok = validateRequired('f-bis', 'Enddatum ist erforderlich') & ok;
+    ok = validateRequired('f-preis', 'Preis ist erforderlich') & ok;
+
+    if (!ok) {
+      toast('Bitte Pflichtfelder ausf\u00FCllen', 'error');
+      return;
+    }
+
+    var von = document.getElementById('f-von').value;
+    var bis = document.getElementById('f-bis').value;
+    var tage = Math.round((new Date(bis) - new Date(von)) / 86400000);
+
+    var item = {
+      anbieter: document.getElementById('f-anbieter').value.trim(),
+      fahrzeugtyp: document.getElementById('f-fahrzeug').value.trim(),
+      kategorie: document.getElementById('f-kategorie').value,
+      abholung: document.getElementById('f-abholung').value.trim(),
+      rueckgabe: document.getElementById('f-rueckgabe').value.trim(),
+      von: von,
+      bis: bis,
+      tage: tage,
+      preis: parseFloat(document.getElementById('f-preis').value),
+      versicherung: document.getElementById('f-versicherung').value.trim(),
+      extras: document.getElementById('f-extras').value.trim(),
+      link: document.getElementById('f-link').value.trim(),
+      status: document.getElementById('f-status').value,
+      notizen: document.getElementById('f-notizen').value.trim()
+    };
+
+    mietwagen = DataStore.add('mietwagen', item, DEFAULT_MIETWAGEN);
+    renderMietwagen();
+    toast('Mietwagen hinzugef\u00FCgt!');
+  };
+
+  // ─── Delete Mietwagen ───
+  window.deleteMietwagen = function(id) {
+    confirmModal(
+      'Mietwagen l\u00F6schen',
+      'Diesen Mietwagen-Eintrag wirklich l\u00F6schen?',
+      function() {
+        mietwagen = DataStore.remove('mietwagen', id, DEFAULT_MIETWAGEN);
+        renderMietwagen();
+        toast('Mietwagen gel\u00F6scht');
+      },
+      { danger: true, confirmLabel: 'L\u00F6schen' }
+    );
+  };
+
+  // ─── Cost Splitter ───
+  window.calcSplit = function() {
+    var miete = parseFloat(document.getElementById('c-miete').value) || 0;
+    var sprit = parseFloat(document.getElementById('c-sprit').value) || 0;
+    var maut = parseFloat(document.getElementById('c-maut').value) || 0;
+    var pers = parseInt(document.getElementById('c-personen').value) || personenCount;
+    var total = miete + sprit + maut;
+    var pp = pers > 0 ? (total / pers).toFixed(2) : 0;
+    document.getElementById('split-result').innerHTML =
+      '<div>Gesamt: ' + total.toFixed(2) + ' \u20AC \u00B7 Pro Person</div>' +
+      '<div class="big-num">' + pp + ' \u20AC</div>';
+  };
+
+  // ─── Export ───
+  window.exportData = function() {
+    var exportFahrer = DataStore.get('fahrer', DEFAULT_FAHRER);
+    var exportMietwagen = DataStore.get('mietwagen', DEFAULT_MIETWAGEN);
+    var data = 'const FAHRER = ' + JSON.stringify(exportFahrer, null, 2) + ';\n\n' +
+      'const MIETWAGEN = ' + JSON.stringify(exportMietwagen, null, 2) + ';\n\n' +
+      'const OEPNV_INFO = ' + JSON.stringify(OEPNV_INFO, null, 2) + ';\n';
+    var blob = new Blob([data], { type: 'application/javascript' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'auto.js';
+    a.click();
+    toast('auto.js exportiert!');
+  };
+
+  // ─── Init ───
+  renderDrivers();
   renderMietwagen();
-  toast('Mietwagen hinzugef\u00FCgt!');
-}
-
-function calcSplit() {
-  var miete = parseFloat(document.getElementById('c-miete').value) || 0;
-  var sprit = parseFloat(document.getElementById('c-sprit').value) || 0;
-  var maut = parseFloat(document.getElementById('c-maut').value) || 0;
-  var pers = parseInt(document.getElementById('c-personen').value) || 5;
-  var total = miete + sprit + maut;
-  var pp = pers > 0 ? (total / pers).toFixed(2) : 0;
-  document.getElementById('split-result').innerHTML =
-    '<div>Gesamt: ' + total.toFixed(2) + ' \u20AC &middot; Pro Person</div>' +
-    '<div class="big-num">' + pp + ' \u20AC</div>';
-}
-
-function exportData() {
-  var data = 'const FAHRER = ' + JSON.stringify(FAHRER, null, 2) + ';\n\n' +
-    'const MIETWAGEN = ' + JSON.stringify(MIETWAGEN, null, 2) + ';\n\n' +
-    'const OEPNV_INFO = ' + JSON.stringify(OEPNV_INFO, null, 2) + ';\n';
-  var blob = new Blob([data], { type: 'application/javascript' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'auto.js';
-  a.click();
-  toast('auto.js exportiert!');
-}
-
-renderDrivers();
-renderMietwagen();
-renderTransport();
+  renderTransport();
+})();
 </script>
 </body>
 </html>

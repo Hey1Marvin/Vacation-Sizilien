@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aufgaben - Sizilien Juni 2026</title>
+<link rel="stylesheet" href="../shared/styles.css" />
+<link rel="stylesheet" href="../shared/auth.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="site-nav" data-depth="1"></div>
+
+<header>
+  <h1>Aufgaben</h1>
+  <p>To-Do-Liste &amp; Aufgabenverteilung f&uuml;r die Reiseplanung</p>
+</header>
+
+<div class="container">
+
+  <!-- Wer bist du? -->
+  <div class="voting-user-select" id="user-select-container">
+    <label>Wer bist du?</label>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-grid" id="summary-grid"></div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Anzeigen:</label>
+      <button class="btn btn-sm filter-btn active" onclick="setFilter('alle')" data-filter="alle">Alle</button>
+      <button class="btn btn-sm filter-btn" onclick="setFilter('meine')" data-filter="meine">Meine Aufgaben</button>
+    </div>
+    <div class="filter-group">
+      <label>Status:</label>
+      <select id="filter-status" onchange="renderTodos()" class="person-select">
+        <option value="alle">Alle Status</option>
+        <option value="offen">Offen</option>
+        <option value="in_bearbeitung">In Bearbeitung</option>
+        <option value="erledigt">Erledigt</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Kategorie:</label>
+      <select id="filter-kategorie" onchange="renderTodos()" class="person-select">
+        <option value="alle">Alle Kategorien</option>
+        <option value="unterkunft">Unterkunft</option>
+        <option value="fluege">Fl&uuml;ge</option>
+        <option value="auto">Auto</option>
+        <option value="aktivitaeten">Aktivit&auml;ten</option>
+        <option value="packliste">Packliste</option>
+        <option value="budget">Budget</option>
+        <option value="sonstiges">Sonstiges</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Task groups -->
+  <div id="todos-container"></div>
+
+  <!-- Neue Aufgabe Form -->
+  <div class="add-form" id="new-todo-form">
+    <h3>Neue Aufgabe hinzuf&uuml;gen</h3>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Aufgabe <span class="required">*</span></label>
+        <input type="text" id="todo-title" placeholder="z.B. Flugpreise vergleichen">
+      </div>
+      <div class="form-group">
+        <label>Kategorie</label>
+        <select id="todo-kategorie">
+          <option value="sonstiges">Sonstiges</option>
+          <option value="unterkunft">Unterkunft</option>
+          <option value="fluege">Fl&uuml;ge</option>
+          <option value="auto">Auto</option>
+          <option value="aktivitaeten">Aktivit&auml;ten</option>
+          <option value="packliste">Packliste</option>
+          <option value="budget">Budget</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Priorit&auml;t</label>
+        <select id="todo-prioritaet">
+          <option value="mittel">Mittel</option>
+          <option value="hoch">Hoch</option>
+          <option value="niedrig">Niedrig</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Deadline</label>
+        <input type="date" id="todo-deadline">
+      </div>
+      <div class="form-group">
+        <label>Zust&auml;ndig</label>
+        <select id="todo-zustaendig">
+          <option value="">Nicht zugewiesen</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addTodo()">Aufgabe erstellen</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>Sizilien Urlaub Juni 2026 &middot; Aufgaben &amp; To-Dos</footer>
+
+<script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
+<script src="../shared/auth.js"></script>
+<script src="../shared/data-sync.js"></script>
+<script src="../shared/nav.js"></script>
+<script>
+// ─── State ───
+var TODOS_KEY = 'sizilien2026_todos';
+var currentFilter = 'alle';
+
+var KATEGORIEN = {
+  unterkunft: { label: 'Unterkunft', icon: '&#127976;' },
+  fluege: { label: 'Fl\u00FCge', icon: '&#9992;&#65039;' },
+  auto: { label: 'Auto', icon: '&#128663;' },
+  aktivitaeten: { label: 'Aktivit\u00E4ten', icon: '&#127961;&#65039;' },
+  packliste: { label: 'Packliste', icon: '&#9989;' },
+  budget: { label: 'Budget', icon: '&#128176;' },
+  sonstiges: { label: 'Sonstiges', icon: '&#128196;' }
+};
+
+var PRIORITAETEN = {
+  hoch: { label: 'Hoch', farbe: 'var(--red)' },
+  mittel: { label: 'Mittel', farbe: 'var(--accent)' },
+  niedrig: { label: 'Niedrig', farbe: 'var(--green)' }
+};
+
+var STATUS_LABELS = {
+  offen: 'Offen',
+  in_bearbeitung: 'In Bearbeitung',
+  erledigt: 'Erledigt'
+};
+
+var DEFAULT_TODOS = [
+  { id: 't1', text: 'Unterkunft ausw\u00E4hlen', kategorie: 'unterkunft', prioritaet: 'hoch', deadline: '2026-04-15', zustaendig: '', status: 'offen', erstelltAm: '2026-03-30' },
+  { id: 't2', text: 'Fl\u00FCge buchen', kategorie: 'fluege', prioritaet: 'hoch', deadline: '2026-04-30', zustaendig: '', status: 'offen', erstelltAm: '2026-03-30' },
+  { id: 't3', text: 'Mietwagen reservieren', kategorie: 'auto', prioritaet: 'mittel', deadline: '2026-05-15', zustaendig: '', status: 'offen', erstelltAm: '2026-03-30' },
+  { id: 't4', text: 'Reiseversicherung abschlie\u00DFen', kategorie: 'sonstiges', prioritaet: 'mittel', deadline: '2026-05-20', zustaendig: '', status: 'offen', erstelltAm: '2026-03-30' },
+  { id: 't5', text: 'Packliste durchgehen', kategorie: 'packliste', prioritaet: 'niedrig', deadline: '2026-05-28', zustaendig: '', status: 'offen', erstelltAm: '2026-03-30' },
+  { id: 't6', text: 'Tagesplan erstellen', kategorie: 'aktivitaeten', prioritaet: 'mittel', deadline: '2026-05-25', zustaendig: '', status: 'offen', erstelltAm: '2026-03-30' },
+  { id: 't7', text: 'Gemeinsame Sachen aufteilen', kategorie: 'sonstiges', prioritaet: 'niedrig', deadline: '2026-05-28', zustaendig: '', status: 'offen', erstelltAm: '2026-03-30' }
+];
+
+function getTodos() {
+  try {
+    var stored = JSON.parse(localStorage.getItem(TODOS_KEY));
+    if (stored && stored.length > 0) return stored;
+    return DEFAULT_TODOS.map(function(t) { return JSON.parse(JSON.stringify(t)); });
+  } catch(e) {
+    return DEFAULT_TODOS.map(function(t) { return JSON.parse(JSON.stringify(t)); });
+  }
+}
+function saveTodos(todos) {
+  localStorage.setItem(TODOS_KEY, JSON.stringify(todos));
+}
+
+// ─── User Select ───
+function onUserChange() {
+  var sel = document.getElementById('user-select-container-select');
+  if (sel) {
+    setActiveUser(sel.value);
+    renderAll();
+  }
+}
+
+function renderUserSelect() {
+  var container = document.getElementById('user-select-container');
+  container.innerHTML = '<label>Wer bist du?</label> ' + renderPersonSelect('user-select-container', 'onUserChange()');
+
+  // Populate the "Zustaendig" dropdown in form
+  var sel = document.getElementById('todo-zustaendig');
+  sel.innerHTML = '<option value="">Nicht zugewiesen</option>';
+  REISENDE.forEach(function(r) {
+    sel.innerHTML += '<option value="' + r.id + '">' + esc(r.name) + '</option>';
+  });
+}
+
+// ─── Filter ───
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.filter-btn[data-filter="' + filter + '"]').forEach(function(b) { b.classList.add('active'); });
+  renderTodos();
+}
+
+// ─── Summary ───
+function renderSummary() {
+  var todos = getTodos();
+  var total = todos.length;
+  var offen = todos.filter(function(t) { return t.status === 'offen'; }).length;
+  var inProgress = todos.filter(function(t) { return t.status === 'in_bearbeitung'; }).length;
+  var done = todos.filter(function(t) { return t.status === 'erledigt'; }).length;
+
+  var pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('summary-grid').innerHTML =
+    '<div class="summary-card">' +
+      '<div class="summary-icon">&#128203;</div>' +
+      '<div class="summary-info"><div class="summary-label">Gesamt</div><div class="summary-value">' + total + '</div></div>' +
+    '</div>' +
+    '<div class="summary-card">' +
+      '<div class="summary-icon">&#128308;</div>' +
+      '<div class="summary-info"><div class="summary-label">Offen</div><div class="summary-value">' + offen + '</div></div>' +
+    '</div>' +
+    '<div class="summary-card">' +
+      '<div class="summary-icon">&#128992;</div>' +
+      '<div class="summary-info"><div class="summary-label">In Bearbeitung</div><div class="summary-value">' + inProgress + '</div></div>' +
+    '</div>' +
+    '<div class="summary-card">' +
+      '<div class="summary-icon">&#9989;</div>' +
+      '<div class="summary-info"><div class="summary-label">Erledigt</div><div class="summary-value">' + done + '</div></div>' +
+    '</div>' +
+    '<div class="summary-card progress-card">' +
+      '<div class="summary-info"><div class="summary-label">Fortschritt</div><div class="summary-value">' + pct + '%</div></div>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%"></div></div>' +
+    '</div>';
+}
+
+// ─── Render Todos ───
+function renderTodos() {
+  var container = document.getElementById('todos-container');
+  var todos = getTodos();
+  var activeUser = getActiveUser();
+  var filterStatus = document.getElementById('filter-status').value;
+  var filterKategorie = document.getElementById('filter-kategorie').value;
+
+  // Apply filters
+  if (currentFilter === 'meine' && activeUser) {
+    todos = todos.filter(function(t) { return t.zustaendig === activeUser; });
+  }
+  if (filterStatus !== 'alle') {
+    todos = todos.filter(function(t) { return t.status === filterStatus; });
+  }
+  if (filterKategorie !== 'alle') {
+    todos = todos.filter(function(t) { return t.kategorie === filterKategorie; });
+  }
+
+  // Group by status
+  var groups = { offen: [], in_bearbeitung: [], erledigt: [] };
+  todos.forEach(function(t) {
+    if (groups[t.status]) groups[t.status].push(t);
+  });
+
+  var html = '';
+  var today = new Date().toISOString().split('T')[0];
+
+  ['offen', 'in_bearbeitung', 'erledigt'].forEach(function(status) {
+    var items = groups[status];
+    if (items.length === 0 && filterStatus !== 'alle' && filterStatus !== status) return;
+
+    // Sort by priority then deadline
+    var prioOrder = { hoch: 0, mittel: 1, niedrig: 2 };
+    items.sort(function(a, b) {
+      var pa = prioOrder[a.prioritaet] !== undefined ? prioOrder[a.prioritaet] : 1;
+      var pb = prioOrder[b.prioritaet] !== undefined ? prioOrder[b.prioritaet] : 1;
+      if (pa !== pb) return pa - pb;
+      if (a.deadline && b.deadline) return a.deadline.localeCompare(b.deadline);
+      if (a.deadline) return -1;
+      if (b.deadline) return 1;
+      return 0;
+    });
+
+    html += '<div class="todo-group">';
+    html += '<h3 class="todo-group-header status-' + status + '">';
+    html += '<span class="status-dot status-' + status + '"></span> ';
+    html += STATUS_LABELS[status] + ' <span class="todo-count">(' + items.length + ')</span>';
+    html += '</h3>';
+
+    if (items.length === 0) {
+      html += '<div class="todo-empty">Keine Aufgaben in diesem Status</div>';
+    }
+
+    items.forEach(function(todo) {
+      var isOverdue = todo.deadline && todo.deadline < today && todo.status !== 'erledigt';
+      var person = todo.zustaendig ? getReisenderById(todo.zustaendig) : null;
+      var kat = KATEGORIEN[todo.kategorie] || KATEGORIEN.sonstiges;
+      var prio = PRIORITAETEN[todo.prioritaet] || PRIORITAETEN.mittel;
+
+      html += '<div class="todo-card' + (isOverdue ? ' overdue' : '') + (todo.status === 'erledigt' ? ' done' : '') + '">';
+
+      // Priority indicator
+      html += '<div class="todo-prio" style="background:' + prio.farbe + '" title="Priorit\u00E4t: ' + prio.label + '"></div>';
+
+      // Content
+      html += '<div class="todo-content">';
+      html += '<div class="todo-title">' + esc(todo.text) + '</div>';
+      html += '<div class="todo-meta">';
+      html += '<span class="todo-kat-badge">' + kat.icon + ' ' + esc(kat.label) + '</span>';
+      html += '<span class="todo-prio-badge prio-' + todo.prioritaet + '">' + esc(prio.label) + '</span>';
+      if (todo.deadline) {
+        var deadlineDate = new Date(todo.deadline);
+        var dlLabel = deadlineDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        html += '<span class="todo-deadline' + (isOverdue ? ' overdue' : '') + '">&#128197; ' + dlLabel + '</span>';
+      }
+      html += '</div>';
+      html += '</div>';
+
+      // Person
+      html += '<div class="todo-person">';
+      if (person) {
+        html += renderInitiale(person, 28);
+      }
+      html += '<select class="person-select todo-assign" onchange="assignPerson(\'' + esc(todo.id) + '\', this.value)" title="Person zuweisen">';
+      html += '<option value="">--</option>';
+      REISENDE.forEach(function(r) {
+        html += '<option value="' + r.id + '"' + (todo.zustaendig === r.id ? ' selected' : '') + '>' + esc(r.name) + '</option>';
+      });
+      html += '</select>';
+      html += '</div>';
+
+      // Status actions
+      html += '<div class="todo-actions">';
+      if (todo.status === 'offen') {
+        html += '<button class="btn btn-sm btn-primary" onclick="changeStatus(\'' + esc(todo.id) + '\',\'in_bearbeitung\')">Starten</button>';
+      } else if (todo.status === 'in_bearbeitung') {
+        html += '<button class="btn btn-sm" style="background:var(--green);color:#fff" onclick="changeStatus(\'' + esc(todo.id) + '\',\'erledigt\')">Fertig</button>';
+        html += '<button class="btn btn-sm btn-secondary" onclick="changeStatus(\'' + esc(todo.id) + '\',\'offen\')">Zur\u00FCck</button>';
+      } else {
+        html += '<button class="btn btn-sm btn-secondary" onclick="changeStatus(\'' + esc(todo.id) + '\',\'offen\')">\u00D6ffnen</button>';
+      }
+      html += '<button class="btn btn-sm btn-danger" onclick="deleteTodo(\'' + esc(todo.id) + '\')" title="L\u00F6schen">&times;</button>';
+      html += '</div>';
+
+      html += '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ─── Actions ───
+function changeStatus(todoId, newStatus) {
+  var todos = getTodos();
+  var todo = todos.find(function(t) { return t.id === todoId; });
+  if (!todo) return;
+
+  todo.status = newStatus;
+  saveTodos(todos);
+  renderAll();
+  toast('Status ge\u00E4ndert: ' + STATUS_LABELS[newStatus]);
+}
+
+function assignPerson(todoId, personId) {
+  var todos = getTodos();
+  var todo = todos.find(function(t) { return t.id === todoId; });
+  if (!todo) return;
+
+  todo.zustaendig = personId;
+  saveTodos(todos);
+  renderTodos();
+
+  if (personId) {
+    var r = getReisenderById(personId);
+    toast('Zugewiesen an ' + (r ? r.name : personId));
+  } else {
+    toast('Zuweisung entfernt');
+  }
+}
+
+function deleteTodo(todoId) {
+  if (!confirm('Aufgabe wirklich l\u00F6schen?')) return;
+  var todos = getTodos();
+  todos = todos.filter(function(t) { return t.id !== todoId; });
+  saveTodos(todos);
+  renderAll();
+  toast('Aufgabe gel\u00F6scht');
+}
+
+function addTodo() {
+  var text = document.getElementById('todo-title').value.trim();
+  if (!text) {
+    toast('Bitte Aufgabe eingeben!', 'error');
+    return;
+  }
+
+  var todos = getTodos();
+  todos.push({
+    id: 't' + Date.now(),
+    text: text,
+    kategorie: document.getElementById('todo-kategorie').value,
+    prioritaet: document.getElementById('todo-prioritaet').value,
+    deadline: document.getElementById('todo-deadline').value || '',
+    zustaendig: document.getElementById('todo-zustaendig').value || '',
+    status: 'offen',
+    erstelltAm: new Date().toISOString().split('T')[0]
+  });
+
+  saveTodos(todos);
+
+  // Reset
+  document.getElementById('todo-title').value = '';
+  document.getElementById('todo-deadline').value = '';
+  document.getElementById('todo-zustaendig').value = '';
+
+  renderAll();
+  toast('Aufgabe erstellt!');
+}
+
+// ─── Render All ───
+function renderAll() {
+  renderUserSelect();
+  renderSummary();
+  renderTodos();
+}
+
+renderAll();
+</script>
+</body>
+</html>

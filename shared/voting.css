@@ -1,0 +1,291 @@
+/* ─── Voting System Styles ─── */
+
+/* Inline voting (ranked choice) */
+.voting-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.vote-rank-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text);
+  font-weight: 700;
+  font-size: .85em;
+  cursor: pointer;
+  transition: all .2s;
+  font-family: inherit;
+}
+.vote-rank-btn:hover {
+  border-color: var(--primary-light);
+  background: var(--info-light);
+}
+.vote-rank-btn.selected {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.vote-voters {
+  display: flex;
+  gap: 3px;
+  margin-left: 8px;
+}
+
+/* Bool voting (thumbs up/down) */
+.voting-bool {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.vote-bool-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  background: var(--card-bg);
+  cursor: pointer;
+  font-size: 1em;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vote-bool-btn:hover { border-color: var(--primary-light); }
+.vote-bool-btn.ja.selected {
+  background: var(--success-light);
+  border-color: var(--green);
+}
+.vote-bool-btn.nein.selected {
+  background: var(--error-light);
+  border-color: var(--red);
+}
+.vote-count {
+  font-weight: 700;
+  font-size: .9em;
+  color: var(--primary);
+  margin: 0 4px;
+}
+
+/* Voting section on hotel page */
+.voting-section {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  margin-bottom: 25px;
+}
+.voting-section h3 { margin-top: 0; }
+
+.voting-user-select {
+  background: var(--info-light);
+  padding: 12px 18px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.voting-user-select label {
+  font-weight: 600;
+  font-size: .9em;
+  color: var(--primary);
+}
+
+/* Voting grid for hotels */
+.voting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.voting-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.voting-item-name {
+  font-weight: 600;
+  font-size: .9em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.voting-item-name .marker-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: .75em;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Borda chart */
+.borda-chart { margin: 15px 0; }
+.borda-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.borda-label {
+  width: 180px;
+  font-size: .85em;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.borda-bar-track {
+  flex: 1;
+  background: var(--border);
+  border-radius: 6px;
+  height: 28px;
+  overflow: hidden;
+}
+.borda-bar-fill {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  height: 100%;
+  border-radius: 6px;
+  color: #fff;
+  font-size: .75em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  white-space: nowrap;
+  min-width: fit-content;
+  transition: width .5s;
+}
+.borda-voters {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* Decision banner */
+.decision-banner {
+  background: linear-gradient(135deg, var(--green), #1abc9c);
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.decision-banner .decision-label { font-size: .85em; opacity: .9; }
+.decision-banner .decision-value { font-size: 1.3em; margin-top: 4px; }
+
+/* Availability calendar */
+.avail-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  max-width: 500px;
+  margin: 15px 0;
+}
+.avail-day-header {
+  text-align: center;
+  font-size: .75em;
+  font-weight: 700;
+  color: var(--text-light);
+  padding: 4px;
+}
+.avail-day {
+  text-align: center;
+  padding: 8px 4px;
+  border-radius: 6px;
+  font-size: .85em;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: all .2s;
+  position: relative;
+}
+.avail-day:hover { border-color: var(--primary-light); }
+.avail-day.empty { border: none; cursor: default; }
+.avail-day.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+.avail-day .avail-heat {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1px;
+}
+.avail-heat-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+.heat-0 { background: #ecf0f1; }
+.heat-1 { background: #f1c40f; }
+.heat-2 { background: #e67e22; }
+.heat-3 { background: #e74c3c; }
+.heat-4 { background: #27ae60; }
+.heat-5 { background: #2ecc71; }
+
+/* Poll cards */
+.poll-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  margin-bottom: 15px;
+}
+.poll-card h4 { margin: 0 0 12px; color: var(--primary); }
+.poll-options { display: flex; flex-direction: column; gap: 8px; }
+.poll-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.poll-option:hover { border-color: var(--primary-light); background: var(--info-light); }
+.poll-option.selected { border-color: var(--primary); background: var(--info-light); }
+.poll-option-text { flex: 1; font-size: .9em; }
+.poll-option-bar {
+  flex: 1;
+  background: var(--border);
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+}
+.poll-option-fill {
+  background: var(--primary-light);
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  font-size: .7em;
+  color: #fff;
+  font-weight: 600;
+  transition: width .3s;
+}
+.poll-voters-list {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .voting-grid { grid-template-columns: 1fr; }
+  .borda-row { flex-wrap: wrap; }
+  .borda-label { width: 100%; }
+}
