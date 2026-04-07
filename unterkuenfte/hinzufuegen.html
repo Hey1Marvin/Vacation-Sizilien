@@ -6,77 +6,259 @@
 <title>Unterkunft hinzuf&uuml;gen - Sizilien 2026</title>
 <link rel="stylesheet" href="../shared/styles.css" />
 <link rel="stylesheet" href="styles.css" />
+<style>
+/* ─── Add-Form Specific Styles ─── */
+.url-scrape-section {
+  background: var(--info-light);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-8);
+}
+.url-scrape-section h3 {
+  margin: 0 0 var(--space-2);
+  font-size: 1rem;
+  color: var(--primary);
+}
+.url-scrape-section p {
+  font-size: 0.8125rem;
+  color: var(--gray-500);
+  margin-bottom: var(--space-4);
+}
+.url-input-row {
+  display: flex;
+  gap: var(--space-3);
+}
+.url-input-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  background: var(--surface-card);
+  color: var(--gray-900);
+}
+.url-input-row input:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(61,122,158,0.15);
+}
+.scrape-status {
+  margin-top: var(--space-3);
+  font-size: 0.8125rem;
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+.scrape-status.visible { display: flex; }
+.scrape-status.loading { color: var(--primary); }
+.scrape-status.success { color: var(--success); }
+.scrape-status.error { color: var(--error); }
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.add-form {
+  background: var(--surface-card);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+.add-form h3 {
+  margin: 0 0 var(--space-5);
+  font-size: 1.1rem;
+  color: var(--gray-900);
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4) var(--space-5);
+}
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--gray-700);
+}
+.form-group label .required { color: var(--error); }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 8px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: var(--surface-card);
+  color: var(--gray-900);
+  transition: border-color var(--duration-fast) var(--ease);
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(61,122,158,0.15);
+}
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-group .help-text {
+  font-size: 0.6875rem;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+.form-section-title {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--gray-100);
+  margin-top: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--gray-100);
+  flex-wrap: wrap;
+}
+
+.prefilled {
+  border-color: var(--success) !important;
+  background: var(--success-light) !important;
+}
+
+@media (max-width: 768px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .url-input-row { flex-direction: column; }
+}
+</style>
 </head>
 <body>
 
-<div id="site-nav" data-depth="1" data-title="Hinzuf&uuml;gen"></div>
+<a href="#main-content" class="skip-link">Zum Inhalt springen</a>
 
-<header>
-  <h1>Unterkunft hinzuf&uuml;gen</h1>
-  <p>Neue Unterkunftsoption eintragen</p>
-</header>
+<!-- Mini Nav -->
+<div class="mini-nav">
+  <a href="index.html" class="mini-nav-brand" id="mini-brand"></a>
+  <div class="mini-nav-actions">
+    <button class="theme-toggle" id="theme-toggle" aria-label="Farbmodus wechseln"></button>
+  </div>
+</div>
 
-<div class="container">
+<!-- Hero -->
+<section class="hero" style="padding:var(--space-10) var(--space-5) var(--space-8)">
+  <div class="hero-content">
+    <span class="hero-badge" id="hero-badge"></span>
+    <h1>Unterkunft hinzuf&uuml;gen</h1>
+    <p class="hero-subtitle">Neue Unterkunftsoption eintragen &mdash; manuell oder per URL</p>
+  </div>
+</section>
+
+<div class="container" id="main-content">
 
   <div class="action-bar">
-    <a href="index.html" class="btn btn-secondary">&larr; Zur&uuml;ck zur &Uuml;bersicht</a>
+    <a href="index.html" class="btn btn-secondary" id="btn-back"></a>
   </div>
 
+  <!-- URL Scrape Section -->
+  <div class="url-scrape-section">
+    <h3 id="scrape-title"></h3>
+    <p>F&uuml;ge eine Booking.com oder Airbnb URL ein &mdash; wir versuchen die Daten automatisch auszulesen und das Formular vorzubef&uuml;llen.</p>
+    <div class="url-input-row">
+      <input type="url" id="scrape-url" placeholder="https://www.booking.com/hotel/... oder https://www.airbnb.de/rooms/...">
+      <button class="btn btn-primary" id="btn-scrape" onclick="scrapeUrl()"></button>
+    </div>
+    <div class="scrape-status" id="scrape-status">
+      <span id="scrape-icon"></span>
+      <span id="scrape-msg"></span>
+    </div>
+  </div>
+
+  <!-- Manual Form -->
   <div class="add-form">
-    <h3>Neue Unterkunft eintragen</h3>
+    <h3 id="form-title"></h3>
     <div class="form-grid">
+
+      <div class="form-section-title" id="sec-basic"></div>
       <div class="form-group"><label>Name <span class="required">*</span></label><input id="f-name" placeholder="z.B. Villa Bella"></div>
-      <div class="form-group"><label>Typ</label><input id="f-type" placeholder="z.B. Ferienwohnung"></div>
+      <div class="form-group"><label>Typ</label><input id="f-type" placeholder="z.B. Ferienwohnung, Pension"></div>
       <div class="form-group"><label>Ort <span class="required">*</span></label><input id="f-location" placeholder="z.B. Palermo Zentrum"></div>
       <div class="form-group"><label>Adresse</label><input id="f-address" placeholder="z.B. Via Roma 123, Palermo"></div>
       <div class="form-group"><label>Plattform</label>
         <select id="f-platform"><option>Booking.com</option><option>Airbnb</option><option>Andere</option></select>
       </div>
       <div class="form-group"><label>Link zur Unterkunft</label><input id="f-link" type="url" placeholder="https://..."></div>
-      <div class="form-group"><label>Herausgesucht von</label><input id="f-selectedBy" placeholder="z.B. Sebas"></div>
-      <div class="form-group"><label>Farbe (Header)</label>
+      <div class="form-group"><label>Herausgesucht von</label>
+        <select id="f-selectedBy"><option value="">-- niemand --</option></select>
+      </div>
+      <div class="form-group"><label>Farbe</label>
         <select id="f-color">
           <option value="#2980b9">Blau</option><option value="#c0392b">Rot</option>
           <option value="#27ae60">Gr&uuml;n</option><option value="#8e44ad">Lila</option>
           <option value="#e67e22">Orange</option><option value="#b7950b">Gold</option>
+          <option value="#2c3e50">Dunkelblau</option><option value="#16a085">T&uuml;rkis</option>
         </select>
       </div>
-      <div class="form-group"><label>Check-in Datum <span class="required">*</span></label><input id="f-dateFrom" type="date"></div>
-      <div class="form-group"><label>Check-out Datum <span class="required">*</span></label><input id="f-dateTo" type="date"></div>
+
+      <div class="form-section-title" id="sec-booking"></div>
+      <div class="form-group"><label>N&auml;chte <span class="required">*</span></label><input id="f-nights" type="number" placeholder="z.B. 5" min="1"></div>
       <div class="form-group"><label>Personen</label><input id="f-persons" type="number" value="5" min="1"></div>
-      <div class="form-group"><label>Gesamtpreis (Euro) <span class="required">*</span></label><input id="f-price" type="number" placeholder="z.B. 500"></div>
-      <div class="form-group"><label>Originalpreis (Euro)</label><input id="f-origPrice" type="number" placeholder="vor Rabatt"></div>
-      <div class="form-group"><label>Bewertung (1-10 oder 1-5)</label><input id="f-rating" type="number" step="0.1" placeholder="z.B. 9.2"></div>
-      <div class="form-group"><label>Bewertungsskala</label>
-        <select id="f-ratingScale"><option value="10">von 10</option><option value="5">von 5 (Airbnb)</option></select>
-        <span class="help-text">Booking.com nutzt 1-10, Airbnb nutzt 1-5</span>
+      <div class="form-group"><label>Gesamtpreis (&euro;) <span class="required">*</span></label><input id="f-price" type="number" placeholder="z.B. 500"></div>
+      <div class="form-group"><label>Originalpreis (&euro;)</label><input id="f-origPrice" type="number" placeholder="vor Rabatt"></div>
+
+      <div class="form-section-title" id="sec-rating"></div>
+      <div class="form-group"><label>Bewertung</label><input id="f-rating" type="number" step="0.1" placeholder="z.B. 9.2"></div>
+      <div class="form-group"><label>Skala</label>
+        <select id="f-ratingScale"><option value="10">von 10 (Booking)</option><option value="5">von 5 (Airbnb)</option></select>
       </div>
       <div class="form-group"><label>Anzahl Bewertungen</label><input id="f-ratingCount" type="number" placeholder="z.B. 56"></div>
+
+      <div class="form-section-title" id="sec-details"></div>
       <div class="form-group"><label>Gr&ouml;&szlig;e (m&sup2;)</label><input id="f-sqm" type="number" placeholder="z.B. 50"></div>
       <div class="form-group"><label>Schlafzimmer</label><input id="f-bedrooms" type="number" placeholder="z.B. 2"></div>
       <div class="form-group"><label>Badezimmer</label><input id="f-bathrooms" type="number" placeholder="z.B. 1"></div>
-      <div class="form-group"><label>Betten-Beschreibung</label><input id="f-beds" placeholder="z.B. 1 Doppel + 2 Einzel"></div>
-      <div class="form-group"><label>Check-in Zeiten</label><input id="f-checkin" placeholder="z.B. ab 15:00"></div>
-      <div class="form-group"><label>Check-out Zeiten</label><input id="f-checkout" placeholder="z.B. bis 10:00"></div>
+      <div class="form-group"><label>Betten</label><input id="f-beds" placeholder="z.B. 1 Doppel + 2 Einzel"></div>
+      <div class="form-group"><label>Check-in</label><input id="f-checkin" placeholder="z.B. ab 15:00"></div>
+      <div class="form-group"><label>Check-out</label><input id="f-checkout" placeholder="z.B. bis 10:00"></div>
       <div class="form-group"><label>Stornierung</label>
         <select id="f-cancel"><option value="free">Kostenlos stornierbar</option><option value="partial">Teilweise erstattbar</option><option value="none">Nicht kostenlos</option></select>
       </div>
-      <div class="form-group"><label>Storno-Details</label><input id="f-cancelNote" placeholder="z.B. bis 27.05."></div>
+      <div class="form-group"><label>Storno-Details</label><input id="f-cancelNote" placeholder="z.B. Kostenlos bis 27.05."></div>
       <div class="form-group"><label>Parkplatz</label><input id="f-parking" placeholder="z.B. Gratis Parkplatz"></div>
       <div class="form-group"><label>Gastgeber</label><input id="f-host" placeholder="z.B. Maria"></div>
       <div class="form-group full"><label>Ausstattung (kommasepariert)</label><input id="f-features" placeholder="z.B. Klimaanlage, WLAN, K&uuml;che, Balkon, Waschmaschine"></div>
-      <div class="form-group"><label>Entfernung Palermo</label><input id="f-dPalermo" placeholder="z.B. 2 km"></div>
-      <div class="form-group"><label>Entfernung Strand</label><input id="f-dStrand" placeholder="z.B. 1,5 km"></div>
-      <div class="form-group"><label>Entfernung Bahnhof</label><input id="f-dBahn" placeholder="z.B. 500 m"></div>
-      <div class="form-group"><label>Entfernung Flughafen</label><input id="f-dFlug" placeholder="z.B. 15 km"></div>
-      <div class="form-group"><label>Breitengrad (Karte)</label><input id="f-lat" type="number" step="0.0001" placeholder="z.B. 38.12"></div>
-      <div class="form-group"><label>L&auml;ngengrad (Karte)</label><input id="f-lng" type="number" step="0.0001" placeholder="z.B. 13.35"></div>
+
+      <div class="form-section-title" id="sec-distances"></div>
+      <div class="form-group"><label>Entf. Palermo</label><input id="f-dPalermo" placeholder="z.B. 2 km"></div>
+      <div class="form-group"><label>Entf. Strand</label><input id="f-dStrand" placeholder="z.B. 1,5 km"></div>
+      <div class="form-group"><label>Entf. Bahnhof</label><input id="f-dBahn" placeholder="z.B. 500 m"></div>
+      <div class="form-group"><label>Entf. Flughafen</label><input id="f-dFlug" placeholder="z.B. 15 km"></div>
+
+      <div class="form-section-title" id="sec-map"></div>
+      <div class="form-group"><label>Breitengrad</label><input id="f-lat" type="number" step="0.0001" placeholder="z.B. 38.12"></div>
+      <div class="form-group"><label>L&auml;ngengrad</label><input id="f-lng" type="number" step="0.0001" placeholder="z.B. 13.35"></div>
+
+      <div class="form-section-title" id="sec-procons"></div>
       <div class="form-group full"><label>Vorteile (zeilenweise)</label><textarea id="f-pros" placeholder="Ein Vorteil pro Zeile"></textarea></div>
       <div class="form-group full"><label>Nachteile (zeilenweise)</label><textarea id="f-cons" placeholder="Ein Nachteil pro Zeile"></textarea></div>
+
       <div class="form-actions">
-        <button class="btn btn-primary" onclick="addHotel()">Unterkunft hinzuf&uuml;gen</button>
-        <button class="btn btn-secondary" onclick="clearForm()">Formular leeren</button>
-        <button class="btn btn-secondary" onclick="exportData()">Daten als JSON exportieren</button>
+        <button class="btn btn-primary" id="btn-save" onclick="saveHotel()"></button>
+        <button class="btn btn-secondary" id="btn-clear" onclick="clearForm()"></button>
+        <a href="index.html" class="btn btn-secondary" id="btn-cancel"></a>
       </div>
     </div>
   </div>
@@ -84,109 +266,288 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<footer></footer>
 
-<footer>Sizilien Urlaub Juni 2026</footer>
-
-<script src="../shared/helpers.js"></script>
-<script src="../shared/nav.js"></script>
+<script src="../shared/icons.js"></script>
+<script src="../shared/config.js"></script>
+<script src="../shared/data.js"></script>
 <script src="hotels.js"></script>
+<script src="../shared/helpers.js"></script>
+<script src="../shared/personen.js"></script>
 <script>
-function addHotel() {
-  clearValidation();
-  var ok = true;
-  ok = validateRequired('f-name', 'Name ist erforderlich') & ok;
-  ok = validateRequired('f-location', 'Ort ist erforderlich') & ok;
-  ok = validateRequired('f-dateFrom', 'Check-in Datum ist erforderlich') & ok;
-  ok = validateRequired('f-dateTo', 'Check-out Datum ist erforderlich') & ok;
-  ok = validateRequired('f-price', 'Preis ist erforderlich') & ok;
-  if (!ok) { toast('Bitte Pflichtfelder ausf\u00FCllen', 'error'); return; }
+(function() {
+  var SECTION = 'hotels';
+  var config = SizilienConfig.load();
 
-  var name = document.getElementById('f-name').value.trim();
-  var location = document.getElementById('f-location').value.trim();
-  var dateFrom = document.getElementById('f-dateFrom').value;
-  var dateTo = document.getElementById('f-dateTo').value;
-  var price = parseFloat(document.getElementById('f-price').value);
+  // ─── Theme Toggle (same as main page) ───
+  var THEME_KEY = 'sizilien-theme';
+  function getTheme() {
+    var saved = localStorage.getItem(THEME_KEY);
+    if (saved) return saved;
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    return 'light';
+  }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : '');
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.innerHTML = theme === 'dark' ? Icons.sunMedium({size: 18}) : Icons.moon({size: 18});
+  }
+  var currentTheme = getTheme();
+  applyTheme(currentTheme);
+  document.getElementById('theme-toggle').addEventListener('click', function() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, currentTheme);
+    applyTheme(currentTheme);
+  });
 
-  var d1 = new Date(dateFrom), d2 = new Date(dateTo);
-  var nights = Math.round((d2 - d1) / 86400000);
-  if (nights <= 0) { toast('Check-out muss nach Check-in liegen'); return; }
+  // ─── Icons & labels ───
+  document.getElementById('mini-brand').innerHTML = Icons.mapPin({size: 18}) + ' Sizilien 2026';
+  document.getElementById('hero-badge').innerHTML = Icons.plus({size: 14}) + ' Neue Unterkunft';
+  document.getElementById('btn-back').innerHTML = Icons.chevronDown({size: 14, class: 'rotate-90'}) + ' Zur\u00FCck zur \u00DCbersicht';
+  document.getElementById('scrape-title').innerHTML = Icons.externalLink({size: 16}) + ' Per URL importieren';
+  document.getElementById('btn-scrape').innerHTML = Icons.download({size: 16}) + ' Daten abrufen';
+  document.getElementById('form-title').innerHTML = Icons.plus({size: 16}) + ' Manuell eintragen';
+  document.getElementById('sec-basic').innerHTML = Icons.building({size: 14}) + ' Grunddaten';
+  document.getElementById('sec-booking').innerHTML = Icons.euro({size: 14}) + ' Buchung & Preis';
+  document.getElementById('sec-rating').innerHTML = Icons.star({size: 14}) + ' Bewertung';
+  document.getElementById('sec-details').innerHTML = Icons.bed({size: 14}) + ' Details & Ausstattung';
+  document.getElementById('sec-distances').innerHTML = Icons.mapPin({size: 14}) + ' Entfernungen';
+  document.getElementById('sec-map').innerHTML = Icons.mapPin({size: 14}) + ' Kartenposition';
+  document.getElementById('sec-procons').innerHTML = Icons.listChecks({size: 14}) + ' Vor- & Nachteile';
+  document.getElementById('btn-save').innerHTML = Icons.check({size: 16}) + ' Unterkunft speichern';
+  document.getElementById('btn-clear').innerHTML = Icons.x({size: 16}) + ' Formular leeren';
+  document.getElementById('btn-cancel').innerHTML = Icons.x({size: 16}) + ' Abbrechen';
 
-  var colorVal = document.getElementById('f-color').value;
-  var persons = parseInt(document.getElementById('f-persons').value) || 5;
-  var cancelMap = { free: {free:true,note:''}, partial: {free:false,partial:true,note:''}, none: {free:false,note:''} };
-  var cancelType = document.getElementById('f-cancel').value;
-  var cancel = cancelMap[cancelType];
-  cancel.note = document.getElementById('f-cancelNote').value.trim() ||
-    (cancelType === 'free' ? 'Kostenlos stornierbar' : cancelType === 'partial' ? 'Teilweise erstattbar' : 'Nicht kostenlos');
+  // ─── Populate "selectedBy" with person names ───
+  var sel = document.getElementById('f-selectedBy');
+  config.personenNamen.forEach(function(name) {
+    var opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
 
-  var newHotel = {
-    id: HOTELS.length + 1,
-    name: name,
-    type: document.getElementById('f-type').value.trim() || 'Unterkunft',
-    location: location,
-    address: document.getElementById('f-address').value.trim(),
-    platform: document.getElementById('f-platform').value,
-    link: document.getElementById('f-link').value.trim(),
-    selectedBy: document.getElementById('f-selectedBy').value.trim(),
-    dateFrom: dateFrom, dateTo: dateTo, nights: nights, persons: persons,
-    totalPrice: price,
-    originalPrice: parseFloat(document.getElementById('f-origPrice').value) || null,
-    rating: parseFloat(document.getElementById('f-rating').value) || 0,
-    ratingScale: parseInt(document.getElementById('f-ratingScale').value),
-    ratingCount: parseInt(document.getElementById('f-ratingCount').value) || 0,
-    ratingCategories: {},
-    sqm: parseInt(document.getElementById('f-sqm').value) || null,
-    bedrooms: parseInt(document.getElementById('f-bedrooms').value) || 0,
-    bathrooms: parseInt(document.getElementById('f-bathrooms').value) || 0,
-    beds: document.getElementById('f-beds').value.trim(),
-    maxGuests: persons,
-    features: document.getElementById('f-features').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
-    parking: document.getElementById('f-parking').value.trim(),
-    cancellation: cancel,
-    checkin: document.getElementById('f-checkin').value.trim() || '',
-    checkout: document.getElementById('f-checkout').value.trim() || '',
-    host: document.getElementById('f-host').value.trim(),
-    distances: {
-      palermo: document.getElementById('f-dPalermo').value.trim(),
-      strand: document.getElementById('f-dStrand').value.trim(),
-      bahnhof: document.getElementById('f-dBahn').value.trim(),
-      flughafen: document.getElementById('f-dFlug').value.trim()
-    },
-    pros: document.getElementById('f-pros').value.split('\n').map(function(s){return s.trim();}).filter(Boolean),
-    cons: document.getElementById('f-cons').value.split('\n').map(function(s){return s.trim();}).filter(Boolean),
-    quotes: [],
-    photos: [],
-    photoCount: '0',
-    colors: {
-      header: 'linear-gradient(135deg,' + colorVal + ',' + colorVal + 'dd)',
-      num: colorVal,
-      marker: colorVal
-    },
-    mapLat: parseFloat(document.getElementById('f-lat').value) || null,
-    mapLng: parseFloat(document.getElementById('f-lng').value) || null
+  // ─── Cloudflare Worker URL (same as auth.js) ───
+  var WORKER_URL = '';
+  if (typeof SizilienAuth !== 'undefined' && SizilienAuth.WORKER_URL) {
+    WORKER_URL = SizilienAuth.WORKER_URL;
+  }
+  // Fallback: Try to detect from auth.js config
+  try {
+    var scripts = document.querySelectorAll('script[src*="auth"]');
+    // If no worker URL configured, scraping won't work but manual form still does
+  } catch(e) {}
+
+  // ─── URL Scraping ───
+  window.scrapeUrl = function() {
+    var url = document.getElementById('scrape-url').value.trim();
+    if (!url) { toast('Bitte eine URL eingeben', 'error'); return; }
+
+    // Also set the link field
+    document.getElementById('f-link').value = url;
+
+    // Auto-detect platform
+    if (url.indexOf('booking.com') !== -1) {
+      document.getElementById('f-platform').value = 'Booking.com';
+      document.getElementById('f-ratingScale').value = '10';
+    } else if (url.indexOf('airbnb') !== -1) {
+      document.getElementById('f-platform').value = 'Airbnb';
+      document.getElementById('f-ratingScale').value = '5';
+    }
+
+    if (!WORKER_URL) {
+      toast('Scraping nicht verf\u00FCgbar \u2014 kein Worker konfiguriert. Bitte manuell eintragen.', 'error');
+      showScrapeStatus('error', 'Worker nicht konfiguriert. URL wurde ins Link-Feld \u00FCbernommen.');
+      return;
+    }
+
+    showScrapeStatus('loading', 'Seite wird abgerufen...');
+
+    fetch(WORKER_URL + '/scrape', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.error) {
+        showScrapeStatus('error', 'Fehler: ' + (data.message || data.error));
+        return;
+      }
+
+      var ex = data.extracted || {};
+      var filled = 0;
+
+      function fill(id, val) {
+        if (!val) return;
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.value = val;
+        el.classList.add('prefilled');
+        filled++;
+      }
+
+      fill('f-name', ex.name);
+      fill('f-location', ex.location || ex.address);
+      fill('f-address', ex.address);
+      fill('f-link', ex.link || url);
+      if (ex.rating) fill('f-rating', ex.rating);
+      if (ex.ratingCount) fill('f-ratingCount', ex.ratingCount);
+      if (ex.mapLat) fill('f-lat', ex.mapLat);
+      if (ex.mapLng) fill('f-lng', ex.mapLng);
+
+      if (ex.platform === 'Booking.com') {
+        document.getElementById('f-platform').value = 'Booking.com';
+        document.getElementById('f-ratingScale').value = '10';
+      } else if (ex.platform === 'Airbnb') {
+        document.getElementById('f-platform').value = 'Airbnb';
+        document.getElementById('f-ratingScale').value = '5';
+      }
+
+      if (filled > 0) {
+        showScrapeStatus('success', filled + ' Felder automatisch bef\u00FCllt! Bitte pr\u00FCfen und erg\u00E4nzen.');
+        toast(filled + ' Felder aus ' + (ex.platform || 'URL') + ' \u00FCbernommen!');
+      } else {
+        showScrapeStatus('error', 'Keine Daten gefunden. Die Seite blockiert m\u00F6glicherweise das Abrufen. Bitte manuell eintragen.');
+      }
+    })
+    .catch(function(err) {
+      showScrapeStatus('error', 'Netzwerkfehler: ' + err.message);
+    });
   };
 
-  HOTELS.push(newHotel);
-  clearForm();
-  toast('"' + name + '" hinzugef\u00FCgt! Jetzt exportieren, um zu speichern.');
-}
+  function showScrapeStatus(type, msg) {
+    var el = document.getElementById('scrape-status');
+    var icon = document.getElementById('scrape-icon');
+    var msgEl = document.getElementById('scrape-msg');
+    el.className = 'scrape-status visible ' + type;
+    if (type === 'loading') {
+      icon.innerHTML = '<div class="spinner"></div>';
+    } else if (type === 'success') {
+      icon.innerHTML = Icons.check({size: 16});
+    } else {
+      icon.innerHTML = Icons.alertTriangle({size: 16});
+    }
+    msgEl.textContent = msg;
+  }
 
-function clearForm() {
-  document.querySelectorAll('.add-form input, .add-form textarea').forEach(function(el) {
-    if (el.type === 'number' && el.id === 'f-persons') { el.value = '5'; return; }
-    el.value = '';
+  // ─── Save Hotel to DataStore ───
+  window.saveHotel = function() {
+    clearValidation();
+    var ok = true;
+    ok = validateRequired('f-name', 'Name ist erforderlich') & ok;
+    ok = validateRequired('f-location', 'Ort ist erforderlich') & ok;
+    ok = validateRequired('f-nights', 'N\u00E4chte ist erforderlich') & ok;
+    ok = validateRequired('f-price', 'Preis ist erforderlich') & ok;
+    if (!ok) { toast('Bitte Pflichtfelder ausf\u00FCllen', 'error'); return; }
+
+    var name = document.getElementById('f-name').value.trim();
+    var nights = parseInt(document.getElementById('f-nights').value) || 5;
+    var price = parseFloat(document.getElementById('f-price').value);
+    var persons = parseInt(document.getElementById('f-persons').value) || 5;
+    var colorVal = document.getElementById('f-color').value;
+
+    var cancelType = document.getElementById('f-cancel').value;
+    var cancelMap = { free: {free:true,note:''}, partial: {free:false,partial:true,note:''}, none: {free:false,note:''} };
+    var cancel = cancelMap[cancelType];
+    cancel.note = document.getElementById('f-cancelNote').value.trim() ||
+      (cancelType === 'free' ? 'Kostenlos stornierbar' : cancelType === 'partial' ? 'Teilweise erstattbar' : 'Nicht kostenlos stornierbar');
+
+    // Compute next ID from existing hotels
+    var existing = DataStore.get(SECTION, HOTELS);
+    var maxId = 0;
+    existing.forEach(function(h) { if (h.id > maxId) maxId = h.id; });
+
+    var newHotel = {
+      id: maxId + 1,
+      name: name,
+      type: document.getElementById('f-type').value.trim() || 'Unterkunft',
+      location: document.getElementById('f-location').value.trim(),
+      address: document.getElementById('f-address').value.trim(),
+      platform: document.getElementById('f-platform').value,
+      link: document.getElementById('f-link').value.trim(),
+      selectedBy: document.getElementById('f-selectedBy').value,
+      dateFrom: '', dateTo: '',
+      nights: nights,
+      persons: persons,
+      totalPrice: price,
+      originalPrice: parseFloat(document.getElementById('f-origPrice').value) || null,
+      rating: parseFloat(document.getElementById('f-rating').value) || 0,
+      ratingScale: parseInt(document.getElementById('f-ratingScale').value),
+      ratingCount: parseInt(document.getElementById('f-ratingCount').value) || 0,
+      ratingCategories: {},
+      sqm: parseInt(document.getElementById('f-sqm').value) || null,
+      bedrooms: parseInt(document.getElementById('f-bedrooms').value) || 0,
+      bathrooms: parseInt(document.getElementById('f-bathrooms').value) || 0,
+      beds: document.getElementById('f-beds').value.trim(),
+      maxGuests: persons,
+      features: document.getElementById('f-features').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+      parking: document.getElementById('f-parking').value.trim(),
+      cancellation: cancel,
+      checkin: document.getElementById('f-checkin').value.trim(),
+      checkout: document.getElementById('f-checkout').value.trim(),
+      host: document.getElementById('f-host').value.trim(),
+      distances: {
+        palermo: document.getElementById('f-dPalermo').value.trim(),
+        strand: document.getElementById('f-dStrand').value.trim(),
+        bahnhof: document.getElementById('f-dBahn').value.trim(),
+        flughafen: document.getElementById('f-dFlug').value.trim()
+      },
+      pros: document.getElementById('f-pros').value.split('\n').map(function(s){return s.trim();}).filter(Boolean),
+      cons: document.getElementById('f-cons').value.split('\n').map(function(s){return s.trim();}).filter(Boolean),
+      quotes: [],
+      photos: [],
+      photoCount: '0',
+      colors: {
+        header: 'linear-gradient(135deg,' + colorVal + ',' + lightenColor(colorVal, 20) + ')',
+        num: colorVal,
+        marker: colorVal
+      },
+      mapLat: parseFloat(document.getElementById('f-lat').value) || null,
+      mapLng: parseFloat(document.getElementById('f-lng').value) || null
+    };
+
+    // Save to DataStore
+    DataStore.add(SECTION, newHotel, HOTELS);
+    toast('"' + name + '" gespeichert! Weiterleitung...');
+
+    // Redirect back to overview after short delay
+    setTimeout(function() {
+      window.location.href = 'index.html';
+    }, 1200);
+  };
+
+  // ─── Clear Form ───
+  window.clearForm = function() {
+    document.querySelectorAll('.add-form input, .add-form textarea').forEach(function(el) {
+      if (el.type === 'number' && el.id === 'f-persons') { el.value = '5'; return; }
+      el.value = '';
+      el.classList.remove('prefilled');
+    });
+    document.querySelectorAll('.add-form select').forEach(function(el) {
+      el.selectedIndex = 0;
+    });
+    clearValidation();
+    toast('Formular geleert');
+  };
+
+  // ─── Color helper ───
+  function lightenColor(hex, pct) {
+    hex = hex.replace('#', '');
+    var r = parseInt(hex.substring(0,2), 16);
+    var g = parseInt(hex.substring(2,4), 16);
+    var b = parseInt(hex.substring(4,6), 16);
+    r = Math.min(255, Math.round(r + (255 - r) * pct / 100));
+    g = Math.min(255, Math.round(g + (255 - g) * pct / 100));
+    b = Math.min(255, Math.round(b + (255 - b) * pct / 100));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  // ─── Allow Enter in URL field to trigger scrape ───
+  document.getElementById('scrape-url').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); scrapeUrl(); }
   });
-}
-
-function exportData() {
-  var json = JSON.stringify(HOTELS, null, 2);
-  var blob = new Blob(['const HOTELS = ' + json + ';\n'], { type: 'application/javascript' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'hotels.js';
-  a.click();
-  toast('hotels.js exportiert!');
-}
+})();
 </script>
 </body>
 </html>
