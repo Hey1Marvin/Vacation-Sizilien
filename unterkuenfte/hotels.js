@@ -15,7 +15,7 @@ const HOTELS = [
   //  SEBAS-VORSCHLÄGE (oben im Ranking)
   // ═══════════════════════════════════════════════
   {
-    id: 5,
+    id: 1,
     name: "Lauras Wohnung",
     type: "Eigentumswohnung",
     location: "Palermo Zentrum",
@@ -64,7 +64,7 @@ const HOTELS = [
     mapLng: 13.3575
   },
   {
-    id: 6,
+    id: 2,
     name: "Anna's House",
     type: "2 Wohnungen + Dachterrasse",
     location: "Isola delle Femmine",
@@ -109,7 +109,7 @@ const HOTELS = [
     mapLng: 13.2465
   },
   {
-    id: 11,
+    id: 3,
     name: "Villetta \u201EAnnina\u201C",
     type: "Privatunterkunft",
     location: "Trabia",
@@ -157,7 +157,7 @@ const HOTELS = [
     mapLng: 13.6480
   },
   {
-    id: 12,
+    id: 4,
     name: "MetaM Apt",
     type: "Apartment",
     location: "Palermo Stadtzentrum",
@@ -205,7 +205,7 @@ const HOTELS = [
     mapLng: 13.3615
   },
   {
-    id: 13,
+    id: 5,
     name: "Casa Mareluna",
     type: "Privatunterkunft (3 Etagen)",
     location: "Porticello",
@@ -253,7 +253,7 @@ const HOTELS = [
     mapLng: 13.5305
   },
   {
-    id: 14,
+    id: 6,
     name: "Ciuri ciuri home",
     type: "Privatunterkunft",
     location: "Balestrate",
@@ -301,7 +301,7 @@ const HOTELS = [
     mapLng: 13.0084
   },
   {
-    id: 15,
+    id: 7,
     name: "3-Zimmer-Wohnung Alcamo",
     type: "Apartment",
     location: "Alcamo Marina",
@@ -349,7 +349,7 @@ const HOTELS = [
     mapLng: 12.9366
   },
   {
-    id: 16,
+    id: 8,
     name: "Villa N\u00e0mali",
     type: "Villa",
     location: "Trappeto",
@@ -401,7 +401,7 @@ const HOTELS = [
   //  WEITERE UNTERKÜNFTE
   // ═══════════════════════════════════════════════
   {
-    id: 1,
+    id: 9,
     name: "Casa Alice",
     type: "Pension",
     location: "Isola delle Femmine",
@@ -446,7 +446,7 @@ const HOTELS = [
     mapLng: 13.2450
   },
   {
-    id: 2,
+    id: 10,
     name: "Maya Palace Real",
     type: "Pension",
     location: "Palermo Zentrum (Albergaria)",
@@ -491,7 +491,7 @@ const HOTELS = [
     mapLng: 13.3535
   },
   {
-    id: 3,
+    id: 11,
     name: "Casa del Grecale",
     type: "Ferienhaus (ganzes Haus!)",
     location: "Isola delle Femmine",
@@ -537,7 +537,7 @@ const HOTELS = [
     extraTags: [{ text: "Gratis Flughafentransfer!", class: "green highlight" }]
   },
   {
-    id: 4,
+    id: 12,
     name: "Darling",
     type: "Ferienwohnung (ganze Wohnung)",
     location: "Capaci",
@@ -582,7 +582,7 @@ const HOTELS = [
     mapLng: 13.2340
   },
   {
-    id: 7,
+    id: 13,
     name: "Home Mia",
     type: "Ferienwohnung",
     location: "Palermo Zentrum (Monte di Pietà)",
@@ -627,7 +627,7 @@ const HOTELS = [
     mapLng: 13.3510
   },
   {
-    id: 8,
+    id: 14,
     name: "Casetta Mape",
     type: "Ferienwohnung",
     location: "Palermo Zentrum",
@@ -670,7 +670,7 @@ const HOTELS = [
     mapLng: 13.3465
   },
   {
-    id: 9,
+    id: 15,
     name: "Casa Marta",
     type: "Ferienwohnung",
     location: "Palermo (Außenbezirk)",
@@ -715,7 +715,7 @@ const HOTELS = [
     mapLng: 13.3200
   },
   {
-    id: 10,
+    id: 16,
     name: "Sunny Apartment",
     type: "Ferienwohnung",
     location: "Palermo Nord",

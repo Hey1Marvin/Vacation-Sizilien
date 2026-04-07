@@ -6,11 +6,25 @@
   var PREFIX = 'sizilien2026_';
 
   var DataStore = {
-    // Daten laden: localStorage hat Vorrang, sonst defaults
+    // Daten laden: defaults (Source) + localStorage-Extras mergen
     get: function(section, defaults) {
       try {
         var stored = localStorage.getItem(PREFIX + section);
-        if (stored) return JSON.parse(stored);
+        if (stored) {
+          // Bei Array-Defaults: Source = Truth, localStorage-only Items bleiben erhalten
+          if (defaults !== undefined && Array.isArray(defaults)) {
+            var storedData = JSON.parse(stored);
+            var defaultIds = {};
+            defaults.forEach(function(d) { if (d.id) defaultIds[d.id] = true; });
+            var merged = JSON.parse(JSON.stringify(defaults));
+            storedData.forEach(function(s) {
+              if (s.id && !defaultIds[s.id]) merged.push(s);
+            });
+            this.set(section, merged);
+            return merged;
+          }
+          return JSON.parse(stored);
+        }
       } catch(e) {}
       // Beim ersten Aufruf: Defaults in localStorage schreiben
       if (defaults !== undefined) {
