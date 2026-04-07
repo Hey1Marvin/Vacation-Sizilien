@@ -411,11 +411,6 @@
   margin-bottom: var(--space-6);
   overflow: hidden;
   page-break-inside: avoid;
-  transition: transform var(--duration-normal) var(--ease), box-shadow var(--duration-normal) var(--ease);
-}
-.hotel-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-hover);
 }
 .hotel-header {
   padding: var(--space-5) var(--space-6);
@@ -870,6 +865,214 @@
   margin-bottom: var(--space-6);
 }
 
+/* ─── Metric Chips ─── */
+.metric-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  align-items: center;
+}
+.metric-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--gray-50);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-100);
+  white-space: nowrap;
+}
+.metric-chip svg { width: 13px; height: 13px; opacity: 0.7; }
+.metric-chip small { font-weight: 400; color: var(--gray-400); margin-left: 2px; }
+.metric-chip.good { background: var(--success-light); color: var(--success); border-color: var(--success); }
+.metric-chip.warn { background: var(--warning-light); color: var(--warning); border-color: var(--warning); }
+.metric-chip.bad { background: var(--error-light); color: var(--error); border-color: var(--error); }
+.metric-chip.rating { background: transparent; border: none; padding: 0; gap: var(--space-2); }
+
+/* ─── Rating Dots (inline mini-scores) ─── */
+.rating-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: var(--space-3);
+}
+.rating-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: help;
+}
+.rating-dot.excellent { background: #e0f5e9; color: #1e8449; }
+.rating-dot.good { background: var(--success-light); color: var(--success); }
+.rating-dot.ok { background: var(--warning-light); color: var(--warning); }
+.rating-dot.low { background: var(--error-light); color: var(--error); }
+[data-theme="dark"] .rating-dot.excellent { background: rgba(30,132,73,0.2); }
+
+/* ─── Key Distances (inline summary) ─── */
+.key-distances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) 0;
+}
+.key-distances span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.key-distances strong { color: var(--gray-700); }
+.key-distances svg { width: 11px; height: 11px; opacity: 0.5; }
+
+/* ─── Quick Pros/Cons Count ─── */
+.quick-procons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+  padding: var(--space-2) 0;
+}
+.quick-procons:hover { opacity: 0.8; }
+.qpc-pro, .qpc-con, .qpc-quote {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.qpc-pro { color: var(--success); }
+.qpc-con { color: var(--error); }
+.qpc-quote { color: var(--gray-400); }
+
+/* ─── Detail Section Titles ─── */
+.detail-section-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--gray-700);
+  margin: var(--space-4) 0 var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.detail-section-title svg { opacity: 0.5; }
+
+/* ─── Compare Strip ─── */
+.compare-strip {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding: var(--space-2) 0 var(--space-5);
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.compare-strip::-webkit-scrollbar { height: 4px; }
+.compare-strip::-webkit-scrollbar-track { background: var(--gray-100); border-radius: 2px; }
+.compare-strip::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
+.compare-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+  max-width: 180px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-card);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  text-decoration: none;
+  color: var(--gray-900);
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  transition: all var(--duration-fast) var(--ease);
+}
+.compare-mini:hover {
+  border-color: var(--primary-light);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+.compare-mini-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.compare-mini-name {
+  font-weight: 600;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.compare-mini-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.compare-mini-price {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--success);
+}
+.compare-mini-loc {
+  font-size: 0.6875rem;
+  color: var(--gray-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sebas-mini { border-color: var(--accent-light); }
+
+/* ─── Card Entrance Animations ─── */
+.hotel-card {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease), box-shadow var(--duration-normal) var(--ease);
+}
+.hotel-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.hotel-card:hover {
+  box-shadow: var(--shadow-hover);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hotel-card { opacity: 1; transform: none; transition: box-shadow var(--duration-normal) var(--ease); }
+}
+
+/* ─── Section Number Watermarks ─── */
+.section-heading {
+  position: relative;
+}
+.section-heading[data-num]::before {
+  content: attr(data-num);
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  opacity: 0.04;
+  pointer-events: none;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
 /* ─── Sebas Highlight ─── */
 .sebas-badge {
   display: inline-flex;
@@ -953,4 +1156,7 @@ html { scroll-behavior: smooth; }
   .hotel-price-badge { font-size: 1.1em; }
   .comparison-table { font-size: 0.75rem; }
   .comparison-table th, .comparison-table td { padding: 8px 6px; }
+  .metric-chips { gap: var(--space-1); }
+  .metric-chip { padding: 3px 8px; font-size: 0.6875rem; }
+  .compare-mini { min-width: 140px; padding: var(--space-2) var(--space-3); }
 }
