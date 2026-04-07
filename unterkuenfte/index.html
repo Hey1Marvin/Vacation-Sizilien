@@ -319,7 +319,9 @@
           (h.selectedBy ? ' <span style="color:var(--accent);font-size:.8em">(' + esc(h.selectedBy) + ')</span>' : '') + '<br>' +
           '<span style="color:var(--gray-500)">' + esc(h.location) + '</span><br>' +
           '<strong style="color:var(--success);font-size:1.15em">' + h.totalPrice + ' \u20AC</strong>' +
-          ' <span style="font-size:.8em;color:var(--gray-400)">(' + pricePPN(h) + ' \u20AC/P./N.)</span>' +
+          ' <span style="font-size:.8em;color:var(--gray-400)">(' + pricePPN(h) + ' \u20AC/P./N.)</span><br>' +
+          '<a href="' + esc(h.link) + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;background:var(--primary);color:#fff;padding:5px 12px;border-radius:6px;text-decoration:none;font-size:.8em;font-weight:600">' +
+            Icons.externalLink({size: 12}) + ' Auf ' + esc(h.platform) + ' ansehen</a>' +
         '</div>');
     });
   }
