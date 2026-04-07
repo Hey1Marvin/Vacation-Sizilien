@@ -176,7 +176,7 @@
   <!-- URL Scrape Section -->
   <div class="url-scrape-section">
     <h3 id="scrape-title"></h3>
-    <p>F&uuml;ge eine Booking.com oder Airbnb URL ein &mdash; wir versuchen die Daten automatisch auszulesen und das Formular vorzubef&uuml;llen.</p>
+    <p>F&uuml;ge eine Booking.com oder Airbnb URL ein &mdash; Personen, N&auml;chte und Plattform werden sofort aus der URL ausgelesen. Den Rest tr&auml;gst du manuell ein.</p>
     <div class="url-input-row">
       <input type="url" id="scrape-url" placeholder="https://www.booking.com/hotel/... oder https://www.airbnb.de/rooms/...">
       <button class="btn btn-primary" id="btn-scrape" onclick="scrapeUrl()"></button>
@@ -305,7 +305,7 @@
   document.getElementById('hero-badge').innerHTML = Icons.plus({size: 14}) + ' Neue Unterkunft';
   document.getElementById('btn-back').innerHTML = Icons.chevronDown({size: 14, class: 'rotate-90'}) + ' Zur\u00FCck zur \u00DCbersicht';
   document.getElementById('scrape-title').innerHTML = Icons.externalLink({size: 16}) + ' Per URL importieren';
-  document.getElementById('btn-scrape').innerHTML = Icons.download({size: 16}) + ' Daten abrufen';
+  document.getElementById('btn-scrape').innerHTML = Icons.download({size: 16}) + ' URL auslesen';
   document.getElementById('form-title').innerHTML = Icons.plus({size: 16}) + ' Manuell eintragen';
   document.getElementById('sec-basic').innerHTML = Icons.building({size: 14}) + ' Grunddaten';
   document.getElementById('sec-booking').innerHTML = Icons.euro({size: 14}) + ' Buchung & Preis';
@@ -327,93 +327,129 @@
     sel.appendChild(opt);
   });
 
-  // ─── Cloudflare Worker URL (same as auth.js) ───
+  // ─── Client-side URL Parsing ───
+  function parseUrlData(url) {
+    var result = { link: url };
+    try { var u = new URL(url); } catch(e) { return result; }
+    var params = u.searchParams;
+    var host = u.hostname.toLowerCase();
+
+    if (host.indexOf('airbnb') !== -1) {
+      result.platform = 'Airbnb';
+      result.ratingScale = 5;
+      if (params.get('adults')) result.persons = parseInt(params.get('adults'));
+      var ci = params.get('check_in'), co = params.get('check_out');
+      if (ci && co) {
+        var d1 = new Date(ci), d2 = new Date(co);
+        var nights = Math.round((d2 - d1) / 86400000);
+        if (nights > 0) result.nights = nights;
+      }
+      if (params.get('location')) {
+        result.locationHint = decodeURIComponent(params.get('location').replace(/\+/g, ' '));
+      }
+    } else if (host.indexOf('booking.com') !== -1) {
+      result.platform = 'Booking.com';
+      result.ratingScale = 10;
+      if (params.get('group_adults')) result.persons = parseInt(params.get('group_adults'));
+      var ci2 = params.get('checkin'), co2 = params.get('checkout');
+      if (ci2 && co2) {
+        var d3 = new Date(ci2), d4 = new Date(co2);
+        var nights2 = Math.round((d4 - d3) / 86400000);
+        if (nights2 > 0) result.nights = nights2;
+      }
+      // Name hint from URL slug: /hotel/it/casa-alice.html
+      var slugMatch = u.pathname.match(/\/hotel\/\w+\/([^.]+)/);
+      if (slugMatch) {
+        result.nameHint = slugMatch[1].replace(/-/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      }
+    }
+    return result;
+  }
+
+  // ─── Cloudflare Worker URL (bonus, optional) ───
   var WORKER_URL = '';
   if (typeof SizilienAuth !== 'undefined' && SizilienAuth.WORKER_URL) {
     WORKER_URL = SizilienAuth.WORKER_URL;
   }
-  // Fallback: Try to detect from auth.js config
-  try {
-    var scripts = document.querySelectorAll('script[src*="auth"]');
-    // If no worker URL configured, scraping won't work but manual form still does
-  } catch(e) {}
 
-  // ─── URL Scraping ───
+  // ─── URL Import (client-side parsing + optional Worker scrape) ───
   window.scrapeUrl = function() {
     var url = document.getElementById('scrape-url').value.trim();
     if (!url) { toast('Bitte eine URL eingeben', 'error'); return; }
 
-    // Also set the link field
-    document.getElementById('f-link').value = url;
+    // ── Phase 1: Instant client-side URL parsing ──
+    var parsed = parseUrlData(url);
+    var filled = 0;
 
-    // Auto-detect platform
-    if (url.indexOf('booking.com') !== -1) {
-      document.getElementById('f-platform').value = 'Booking.com';
-      document.getElementById('f-ratingScale').value = '10';
-    } else if (url.indexOf('airbnb') !== -1) {
-      document.getElementById('f-platform').value = 'Airbnb';
-      document.getElementById('f-ratingScale').value = '5';
+    function fill(id, val) {
+      if (val === undefined || val === null || val === '') return;
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.value = val;
+      el.classList.add('prefilled');
+      filled++;
     }
 
-    if (!WORKER_URL) {
-      toast('Scraping nicht verf\u00FCgbar \u2014 kein Worker konfiguriert. Bitte manuell eintragen.', 'error');
-      showScrapeStatus('error', 'Worker nicht konfiguriert. URL wurde ins Link-Feld \u00FCbernommen.');
-      return;
+    fill('f-link', parsed.link);
+    if (parsed.platform) {
+      document.getElementById('f-platform').value = parsed.platform;
+      document.getElementById('f-ratingScale').value = String(parsed.ratingScale || 10);
+      filled++;
+    }
+    if (parsed.persons) fill('f-persons', parsed.persons);
+    if (parsed.nights) fill('f-nights', parsed.nights);
+    if (parsed.locationHint) fill('f-location', parsed.locationHint);
+    if (parsed.nameHint) fill('f-name', parsed.nameHint);
+
+    var details = [];
+    if (parsed.platform) details.push(parsed.platform);
+    if (parsed.persons) details.push(parsed.persons + ' Personen');
+    if (parsed.nights) details.push(parsed.nights + ' N\u00E4chte');
+    if (parsed.locationHint) details.push(parsed.locationHint);
+    if (parsed.nameHint) details.push('"' + parsed.nameHint + '"');
+
+    if (details.length > 0) {
+      showScrapeStatus('success', 'Aus URL erkannt: ' + details.join(', ') + '. Restliche Felder bitte manuell erg\u00E4nzen.');
+      toast(filled + ' Felder aus URL \u00FCbernommen!');
+    } else {
+      showScrapeStatus('success', 'URL \u00FCbernommen. Plattform nicht erkannt \u2014 bitte alle Felder manuell ausf\u00FCllen.');
     }
 
-    showScrapeStatus('loading', 'Seite wird abgerufen...');
-
-    fetch(WORKER_URL + '/scrape', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url })
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (data.error) {
-        showScrapeStatus('error', 'Fehler: ' + (data.message || data.error));
-        return;
-      }
-
-      var ex = data.extracted || {};
-      var filled = 0;
-
-      function fill(id, val) {
-        if (!val) return;
-        var el = document.getElementById(id);
-        if (!el) return;
-        el.value = val;
-        el.classList.add('prefilled');
-        filled++;
-      }
-
-      fill('f-name', ex.name);
-      fill('f-location', ex.location || ex.address);
-      fill('f-address', ex.address);
-      fill('f-link', ex.link || url);
-      if (ex.rating) fill('f-rating', ex.rating);
-      if (ex.ratingCount) fill('f-ratingCount', ex.ratingCount);
-      if (ex.mapLat) fill('f-lat', ex.mapLat);
-      if (ex.mapLng) fill('f-lng', ex.mapLng);
-
-      if (ex.platform === 'Booking.com') {
-        document.getElementById('f-platform').value = 'Booking.com';
-        document.getElementById('f-ratingScale').value = '10';
-      } else if (ex.platform === 'Airbnb') {
-        document.getElementById('f-platform').value = 'Airbnb';
-        document.getElementById('f-ratingScale').value = '5';
-      }
-
-      if (filled > 0) {
-        showScrapeStatus('success', filled + ' Felder automatisch bef\u00FCllt! Bitte pr\u00FCfen und erg\u00E4nzen.');
-        toast(filled + ' Felder aus ' + (ex.platform || 'URL') + ' \u00FCbernommen!');
-      } else {
-        showScrapeStatus('error', 'Keine Daten gefunden. Die Seite blockiert m\u00F6glicherweise das Abrufen. Bitte manuell eintragen.');
-      }
-    })
-    .catch(function(err) {
-      showScrapeStatus('error', 'Netzwerkfehler: ' + err.message);
-    });
+    // ── Phase 2: Try Worker scrape in background (bonus) ──
+    if (WORKER_URL) {
+      fetch(WORKER_URL + '/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data.error || !data.extracted) return;
+        var ex = data.extracted;
+        var extra = 0;
+        // Only fill fields that are still empty
+        function fillIfEmpty(id, val) {
+          if (!val) return;
+          var el = document.getElementById(id);
+          if (!el || el.value) return;
+          el.value = val;
+          el.classList.add('prefilled');
+          extra++;
+        }
+        fillIfEmpty('f-name', ex.name);
+        fillIfEmpty('f-location', ex.location);
+        fillIfEmpty('f-address', ex.address);
+        if (ex.rating) fillIfEmpty('f-rating', ex.rating);
+        if (ex.ratingCount) fillIfEmpty('f-ratingCount', ex.ratingCount);
+        if (ex.mapLat) fillIfEmpty('f-lat', ex.mapLat);
+        if (ex.mapLng) fillIfEmpty('f-lng', ex.mapLng);
+        if (extra > 0) {
+          toast(extra + ' weitere Felder per Scraping erg\u00E4nzt!');
+          showScrapeStatus('success', 'Insgesamt ' + (filled + extra) + ' Felder automatisch bef\u00FCllt!');
+        }
+      })
+      .catch(function() { /* Worker failed silently — user already has URL-parsed data */ });
+    }
   };
 
   function showScrapeStatus(type, msg) {
