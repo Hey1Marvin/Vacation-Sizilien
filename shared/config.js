@@ -8,13 +8,13 @@
   var DEFAULTS = {
     tripName: 'Sizilien 2026',
     personen: 5,
-    personenNamen: ['Person 1', 'Person 2', 'Person 3', 'Person 4', 'Person 5'],
+    personenNamen: ['Marvin', 'Hagen', 'Vobert Retter', 'Sebas', 'Albert'],
     personenDaten: [
-      { name: 'Person 1', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
-      { name: 'Person 2', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
-      { name: 'Person 3', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
-      { name: 'Person 4', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
-      { name: 'Person 5', fuehrerschein: false, faehrtImAusland: false, notizen: '' }
+      { name: 'Marvin', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
+      { name: 'Hagen', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
+      { name: 'Vobert Retter', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
+      { name: 'Sebas', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
+      { name: 'Albert', fuehrerschein: false, faehrtImAusland: false, notizen: '' }
     ],
     reisezeitraum: { von: '2026-06-01', bis: '2026-06-14' },
     zielort: 'Palermo, Sizilien',

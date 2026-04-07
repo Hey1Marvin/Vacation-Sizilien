@@ -108,7 +108,7 @@
       <div id="voter-select"></div>
     </div>
     <h3>W&auml;hle deine Top 3 Unterk&uuml;nfte</h3>
-    <p style="color:var(--gray-400);font-size:.85em;margin-bottom:15px">Klicke 1. / 2. / 3. um deine Favoriten zu markieren. Das Gruppenranking wird automatisch berechnet.</p>
+    <p style="color:var(--gray-400);font-size:.85em;margin-bottom:15px">Klicke 1. / 2. / 3. um deine Favoriten zu markieren, oder <strong>&times;</strong> f&uuml;r &bdquo;gar nicht&ldquo;. Das Gruppenranking wird automatisch berechnet.</p>
     <div class="voting-grid" id="voting-grid"></div>
     <h3 style="margin-top:20px">Gruppenranking</h3>
     <div id="borda-chart"></div>
@@ -315,9 +315,9 @@
       L.marker([h.mapLat, h.mapLng], { icon: icon })
         .addTo(map)
         .bindPopup('<div style="font-family:Inter,sans-serif;min-width:200px">' +
-          '<strong>' + h.id + '. ' + esc(h.name) + '</strong><br>' +
+          '<strong>' + h.id + '. ' + esc(h.name) + '</strong>' +
+          (h.selectedBy ? ' <span style="color:var(--accent);font-size:.8em">(' + esc(h.selectedBy) + ')</span>' : '') + '<br>' +
           '<span style="color:var(--gray-500)">' + esc(h.location) + '</span><br>' +
-          '<span style="font-size:.85em;color:var(--gray-400)">' + fmt(h.dateFrom) + ' \u2013 ' + fmt(h.dateTo) + '</span><br>' +
           '<strong style="color:var(--success);font-size:1.15em">' + h.totalPrice + ' \u20AC</strong>' +
           ' <span style="font-size:.8em;color:var(--gray-400)">(' + pricePPN(h) + ' \u20AC/P./N.)</span>' +
         '</div>');
@@ -337,109 +337,98 @@
       locs.map(function(l) { return '<span>' + esc(l) + '</span>'; }).join('');
   }
 
-  // ─── Comparison Tables ───
-  var sortState = {};
+  // ─── Comparison Table (alle Hotels in einer Tabelle) ───
+  var sortCol = { col: 'price', asc: true };
+
+  function isSebas(h) { return h.selectedBy && h.selectedBy.toLowerCase() === 'sebas'; }
 
   function renderTables() {
-    var groups = {};
-    hotels.forEach(function(h) {
-      var key = h.dateFrom + '_' + h.dateTo;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(h);
+    var list = hotels.slice();
+
+    // Sort
+    list.sort(function(a, b) {
+      switch (sortCol.col) {
+        case 'name': return sortCol.asc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+        case 'price': return sortCol.asc ? a.totalPrice - b.totalPrice : b.totalPrice - a.totalPrice;
+        case 'ppn': return sortCol.asc ? pricePPN(a) - pricePPN(b) : pricePPN(b) - pricePPN(a);
+        case 'rating':
+          var ra = a.ratingScale === 5 ? a.rating * 2 : a.rating;
+          var rb = b.ratingScale === 5 ? b.rating * 2 : b.rating;
+          return sortCol.asc ? ra - rb : rb - ra;
+        case 'sqm': return sortCol.asc ? (a.sqm||0) - (b.sqm||0) : (b.sqm||0) - (a.sqm||0);
+        default: return a.totalPrice - b.totalPrice;
+      }
     });
 
-    var html = '';
-    Object.keys(groups).sort().forEach(function(key) {
-      var list = groups[key].slice();
-      var sortCol = sortState[key] || { col: 'price', asc: true };
+    // Find best values across all hotels
+    var minPrice = Math.min.apply(null, list.map(function(h) { return h.totalPrice; }));
+    var maxRating = Math.max.apply(null, list.map(function(h) { return h.ratingScale === 5 ? h.rating * 2 : h.rating; }));
+    var maxSqm = Math.max.apply(null, list.filter(function(h) { return h.sqm; }).map(function(h) { return h.sqm; }));
 
-      // Sort
-      list.sort(function(a, b) {
-        switch (sortCol.col) {
-          case 'name': return sortCol.asc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-          case 'price': return sortCol.asc ? a.totalPrice - b.totalPrice : b.totalPrice - a.totalPrice;
-          case 'ppn': return sortCol.asc ? pricePPN(a) - pricePPN(b) : pricePPN(b) - pricePPN(a);
-          case 'rating':
-            var ra = a.ratingScale === 5 ? a.rating * 2 : a.rating;
-            var rb = b.ratingScale === 5 ? b.rating * 2 : b.rating;
-            return sortCol.asc ? ra - rb : rb - ra;
-          case 'sqm': return sortCol.asc ? (a.sqm||0) - (b.sqm||0) : (b.sqm||0) - (a.sqm||0);
-          default: return a.totalPrice - b.totalPrice;
-        }
-      });
+    var cols = [
+      { key: 'id', label: '#', sortable: false },
+      { key: 'name', label: 'Name', sortable: true },
+      { key: 'loc', label: 'Ort', sortable: false },
+      { key: 'price', label: 'Preis', sortable: true },
+      { key: 'ppn', label: '\u20AC/P./N.', sortable: true },
+      { key: 'rating', label: 'Bewertung', sortable: true },
+      { key: 'sqm', label: 'm\u00B2', sortable: true },
+      { key: 'sz', label: 'SZ', sortable: false },
+      { key: 'strand', label: 'Strand', sortable: false },
+      { key: 'palermo', label: 'Palermo', sortable: false },
+      { key: 'storno', label: 'Storno', sortable: false },
+      { key: 'link', label: 'Link', sortable: false }
+    ];
 
-      // Find best values
-      var minPrice = Math.min.apply(null, list.map(function(h) { return h.totalPrice; }));
-      var maxRating = Math.max.apply(null, list.map(function(h) { return h.ratingScale === 5 ? h.rating * 2 : h.rating; }));
-      var maxSqm = Math.max.apply(null, list.filter(function(h) { return h.sqm; }).map(function(h) { return h.sqm; }));
-
-      var h0 = list[0];
-      var label = fmt(h0.dateFrom) + ' \u2013 ' + fmt(h0.dateTo) + ' (' + h0.nights + ' N\u00E4chte)';
-      html += '<h3 style="margin-bottom:var(--space-3)">' + label + '</h3>';
-
-      var cols = [
-        { key: 'id', label: '#', sortable: false },
-        { key: 'name', label: 'Name', sortable: true },
-        { key: 'loc', label: 'Ort', sortable: false },
-        { key: 'price', label: 'Preis', sortable: true },
-        { key: 'ppn', label: '\u20AC/P./N.', sortable: true },
-        { key: 'rating', label: 'Bewertung', sortable: true },
-        { key: 'sqm', label: 'm\u00B2', sortable: true },
-        { key: 'sz', label: 'SZ', sortable: false },
-        { key: 'strand', label: 'Strand', sortable: false },
-        { key: 'palermo', label: 'Palermo', sortable: false },
-        { key: 'storno', label: 'Storno', sortable: false },
-        { key: 'link', label: 'Link', sortable: false }
-      ];
-
-      html += '<div class="table-wrapper"><table class="comparison-table"><thead><tr>';
-      cols.forEach(function(c) {
-        var isSorted = sortCol.col === c.key;
-        var arrow = '';
-        if (c.sortable) {
-          arrow = ' <span class="sort-icon">' + Icons.arrowUpDown({size: 10}) + '</span>';
-        }
-        html += '<th' + (c.sortable ? ' onclick="sortTable(\'' + key + '\',\'' + c.key + '\')" class="' + (isSorted ? 'sorted' : '') + '"' : '') + '>' + c.label + arrow + '</th>';
-      });
-      html += '</tr></thead><tbody>';
-
-      list.forEach(function(h) {
-        var ppn = pricePPN(h);
-        var norm = h.ratingScale === 5 ? h.rating * 2 : h.rating;
-        var rCls = norm >= 8 ? 'rt-good' : norm >= 7 ? 'rt-ok' : 'rt-low';
-        var isBestPrice = h.totalPrice === minPrice;
-        var isBestRating = norm === maxRating;
-        var isBestSqm = h.sqm && h.sqm === maxSqm;
-
-        html += '<tr>' +
-          '<td><span class="marker-num" style="background:' + h.colors.marker + '">' + h.id + '</span></td>' +
-          '<td><strong>' + esc(h.name) + '</strong>' + (h.selectedBy ? ' <em style="color:var(--gray-400)">(' + esc(h.selectedBy) + ')</em>' : '') + '</td>' +
-          '<td>' + esc(h.location.split('(')[0].trim()) + '</td>' +
-          '<td class="price-hl' + (isBestPrice ? ' best-value' : '') + '">' + h.totalPrice + ' \u20AC' + (isBestPrice ? '<span class="best-badge">Top</span>' : '') + '</td>' +
-          '<td>' + ppn + ' \u20AC</td>' +
-          '<td class="' + rCls + (isBestRating ? ' best-value' : '') + '">' + Icons.star({size: 12}) + ' ' + ratingDisplay(h) + ' <small>(' + h.ratingCount + ')</small>' + (isBestRating ? '<span class="best-badge">Top</span>' : '') + '</td>' +
-          '<td' + (isBestSqm ? ' class="best-value"' : '') + '>' + (h.sqm || '\u2013') + (isBestSqm ? '<span class="best-badge">Top</span>' : '') + '</td>' +
-          '<td>' + (h.bedrooms || '\u2013') + '</td>' +
-          '<td>' + (h.distances.strand || '\u2013') + '</td>' +
-          '<td>' + (h.distances.palermo || '\u2013') + '</td>' +
-          '<td class="' + cancelClass(h) + '">' + cancelShort(h) + '</td>' +
-          '<td><a href="' + esc(h.link) + '" target="_blank">' + Icons.externalLink({size: 12}) + ' ' + esc(h.platform) + '</a></td>' +
-        '</tr>';
-      });
-      html += '</tbody></table></div>';
+    var html = '<div class="table-wrapper"><table class="comparison-table"><thead><tr>';
+    cols.forEach(function(c) {
+      var isSorted = sortCol.col === c.key;
+      var arrow = '';
+      if (c.sortable) {
+        arrow = ' <span class="sort-icon">' + Icons.arrowUpDown({size: 10}) + '</span>';
+      }
+      html += '<th' + (c.sortable ? ' onclick="sortTable(\'' + c.key + '\')" class="' + (isSorted ? 'sorted' : '') + '"' : '') + '>' + c.label + arrow + '</th>';
     });
+    html += '</tr></thead><tbody>';
+
+    list.forEach(function(h) {
+      var ppn = pricePPN(h);
+      var norm = h.ratingScale === 5 ? h.rating * 2 : h.rating;
+      var rCls = norm >= 8 ? 'rt-good' : norm >= 7 ? 'rt-ok' : 'rt-low';
+      var isBestPrice = h.totalPrice === minPrice;
+      var isBestRating = norm === maxRating;
+      var isBestSqm = h.sqm && h.sqm === maxSqm;
+      var sebas = isSebas(h);
+
+      html += '<tr class="' + (sebas ? 'sebas-row' : '') + '">' +
+        '<td><span class="marker-num" style="background:' + h.colors.marker + '">' + h.id + '</span></td>' +
+        '<td><strong>' + esc(h.name) + '</strong>' +
+          (sebas ? ' <span class="sebas-badge">' + Icons.users({size: 10}) + ' Sebas</span>' : '') +
+          (h.selectedBy && !sebas ? ' <em style="color:var(--gray-400)">(' + esc(h.selectedBy) + ')</em>' : '') +
+        '</td>' +
+        '<td>' + esc(h.location.split('(')[0].trim()) + '</td>' +
+        '<td class="price-hl' + (isBestPrice ? ' best-value' : '') + '">' + h.totalPrice + ' \u20AC' + (isBestPrice ? '<span class="best-badge">Top</span>' : '') + '</td>' +
+        '<td>' + ppn + ' \u20AC</td>' +
+        '<td class="' + rCls + (isBestRating ? ' best-value' : '') + '">' + Icons.star({size: 12}) + ' ' + ratingDisplay(h) + ' <small>(' + h.ratingCount + ')</small>' + (isBestRating ? '<span class="best-badge">Top</span>' : '') + '</td>' +
+        '<td' + (isBestSqm ? ' class="best-value"' : '') + '>' + (h.sqm || '\u2013') + (isBestSqm ? '<span class="best-badge">Top</span>' : '') + '</td>' +
+        '<td>' + (h.bedrooms || '\u2013') + '</td>' +
+        '<td>' + (h.distances.strand || '\u2013') + '</td>' +
+        '<td>' + (h.distances.palermo || '\u2013') + '</td>' +
+        '<td class="' + cancelClass(h) + '">' + cancelShort(h) + '</td>' +
+        '<td><a href="' + esc(h.link) + '" target="_blank">' + Icons.externalLink({size: 12}) + ' ' + esc(h.platform) + '</a></td>' +
+      '</tr>';
+    });
+    html += '</tbody></table></div>';
     document.getElementById('comparison-tables').innerHTML = html;
   }
 
-  window.sortTable = function(groupKey, col) {
-    var current = sortState[groupKey] || { col: 'price', asc: true };
-    if (current.col === col) {
-      current.asc = !current.asc;
+  window.sortTable = function(col) {
+    if (sortCol.col === col) {
+      sortCol.asc = !sortCol.asc;
     } else {
-      current.col = col;
-      current.asc = col === 'name'; // name asc, numbers asc
+      sortCol.col = col;
+      sortCol.asc = col === 'name';
     }
-    sortState[groupKey] = current;
     renderTables();
   };
 
@@ -456,7 +445,10 @@
 
     function rl(items, labelFn) {
       return '<ol class="ranking-list">' + items.map(function(h, i) {
-        return '<li' + (i === 0 ? ' class="winner"' : '') + '><span>' + medalHtml(i) + ' ' + esc(h.name) + '</span><strong>' + labelFn(h) + '</strong></li>';
+        var sebas = isSebas(h);
+        return '<li class="' + (i === 0 ? 'winner' : '') + (sebas ? ' sebas-row' : '') + '"><span>' + medalHtml(i) + ' ' + esc(h.name) +
+          (sebas ? ' <span class="sebas-badge">' + Icons.users({size: 10}) + ' Sebas</span>' : '') +
+          '</span><strong>' + labelFn(h) + '</strong></li>';
       }).join('') + '</ol>';
     }
 
@@ -499,22 +491,27 @@
       var subColor = h.colors.titleDark ? 'color:#555' : '';
       var cardId = 'hotel-' + h.id;
 
-      html += '<div class="hotel-card" id="' + cardId + '">';
+      var sebas = isSebas(h);
+      html += '<div class="hotel-card' + (sebas ? ' sebas-card' : '') + '" id="' + cardId + '">';
+
+      // Sebas banner
+      if (sebas) {
+        html += '<div class="sebas-card-banner">' + Icons.users({size: 14}) + ' Vorschlag von Sebas</div>';
+      }
 
       // Header
       html += '<div class="hotel-header" style="background:' + h.colors.header + '">' +
         '<div class="hotel-num" style="background:' + h.colors.num + '">' + h.id + '</div>' +
         '<div class="hotel-title-block">' +
           '<h3 style="' + titleColor + '">' + esc(h.name) + '</h3>' +
-          '<div class="subtitle" style="' + subColor + '">' + esc(h.type) + ' \u00B7 ' + esc(h.location) + ' \u00B7 ' + esc(h.platform) + (h.selectedBy ? ' \u00B7 <em>von ' + esc(h.selectedBy) + '</em>' : '') + '</div>' +
+          '<div class="subtitle" style="' + subColor + '">' + esc(h.type) + ' \u00B7 ' + esc(h.location) + ' \u00B7 ' + esc(h.platform) + '</div>' +
         '</div>' +
-        '<div class="hotel-price-badge"' + (h.colors.titleDark ? ' style="color:#333"' : '') + '>' + h.totalPrice + ' \u20AC<small' + (h.colors.titleDark ? ' style="color:#555"' : '') + '>' + h.nights + ' N\u00E4chte gesamt</small></div>' +
+        '<div class="hotel-price-badge"' + (h.colors.titleDark ? ' style="color:#333"' : '') + '>' + h.totalPrice + ' \u20AC<small' + (h.colors.titleDark ? ' style="color:#555"' : '') + '>' + h.nights + ' N\u00E4chte</small></div>' +
         '<button class="btn-icon" onclick="deleteHotel(' + h.id + ')" title="Unterkunft l\u00F6schen" aria-label="' + esc(h.name) + ' l\u00F6schen" style="color:' + (h.colors.titleDark ? '#666' : 'rgba(255,255,255,.7)') + '">' + Icons.trash({size: 18}) + '</button>' +
       '</div>';
 
-      // Availability bar
+      // Info bar (no dates)
       html += '<div class="avail-bar' + (isAirbnb ? ' airbnb' : '') + '">' +
-        '<div class="avail-item"><span class="avail-val">' + fmt(h.dateFrom) + ' \u2013 ' + fmt(h.dateTo) + '</span></div>' +
         '<div class="avail-item"><span class="avail-label">N\u00E4chte:</span><span class="avail-val">' + h.nights + '</span></div>' +
         '<div class="avail-item"><span class="avail-label">Personen:</span><span class="avail-val">' + h.persons + '</span></div>' +
         '<div class="avail-item"><span class="avail-label">Pro Pers./Nacht:</span><span class="avail-val ' + (ppn < 25 ? 'cheap' : 'expensive') + '">' + ppn + ' \u20AC</span></div>' +
@@ -668,10 +665,13 @@
       var html = '';
       hotels.forEach(function(h) {
         var itemVotes = votes[h.id] || {};
-        html += '<div class="voting-item">' +
+        var sebas = isSebas(h);
+        html += '<div class="voting-item' + (sebas ? ' sebas-row' : '') + '">' +
           '<div class="voting-item-name">' +
             '<span class="marker-num" style="background:' + h.colors.marker + '">' + h.id + '</span>' +
-            esc(h.name) + ' <small style="color:var(--gray-400)">' + h.totalPrice + '\u20AC</small>' +
+            esc(h.name) +
+            (sebas ? ' <span class="sebas-badge">' + Icons.users({size: 10}) + ' Sebas</span>' : '') +
+            ' <small style="color:var(--gray-400)">' + h.totalPrice + '\u20AC</small>' +
           '</div>' +
           SizilienVoting.renderRankedVotingCard(h.id, h.name, 'unterkuenfte', itemVotes, 3) +
         '</div>';

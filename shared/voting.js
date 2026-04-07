@@ -13,15 +13,24 @@ var SizilienVoting = (function() {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(votes));
   }
 
-  // ── Ranked Choice Vote abgeben ──
+  // ── Ranked Choice Vote abgeben (rang=0 oder null entfernt die Stimme) ──
   function castRankedVote(sektion, itemId, userId, rang) {
     if (typeof SizilienData !== 'undefined' && SizilienData.isConfigured()) {
-      SizilienData.vote(sektion, itemId, userId, rang);
+      if (rang === 0 || rang === null) {
+        // Stimme entfernen via SizilienData
+        SizilienData.vote(sektion, itemId, userId, null);
+      } else {
+        SizilienData.vote(sektion, itemId, userId, rang);
+      }
     } else {
       var votes = getLocalVotes();
       if (!votes[sektion]) votes[sektion] = {};
       if (!votes[sektion][itemId]) votes[sektion][itemId] = {};
-      votes[sektion][itemId][userId] = rang;
+      if (rang === 0 || rang === null) {
+        delete votes[sektion][itemId][userId];
+      } else {
+        votes[sektion][itemId][userId] = rang;
+      }
       saveLocalVotes(votes);
     }
   }
@@ -111,6 +120,12 @@ var SizilienVoting = (function() {
         'onclick="voteRanked(\'' + sektion + '\',' + itemId + ',' + r + ')" ' +
         'title="' + r + '. Wahl">' + r + '.</button>';
     }
+    // "Gar nicht" Button (clear vote)
+    html += '<button class="vote-rank-btn vote-nope' + (currentVote === 0 ? ' selected' : '') + '" ' +
+      'onclick="voteRanked(\'' + sektion + '\',' + itemId + ',0)" ' +
+      'title="Gar nicht">' +
+      (typeof Icons !== 'undefined' ? Icons.x({size: 12}) : '\u2715') +
+      '</button>';
 
     // Wer hat gestimmt
     if (userVotes) {

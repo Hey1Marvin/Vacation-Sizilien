@@ -29,6 +29,21 @@
   color: #fff;
   border-color: var(--primary);
 }
+.vote-nope {
+  border-color: var(--gray-200);
+  color: var(--gray-400);
+  font-size: 0.7em;
+}
+.vote-nope:hover {
+  border-color: var(--error);
+  background: var(--error-light);
+  color: var(--error);
+}
+.vote-nope.selected {
+  background: var(--error-light);
+  color: var(--error);
+  border-color: var(--error);
+}
 .vote-voters {
   display: flex;
   gap: 3px;

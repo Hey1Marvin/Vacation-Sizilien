@@ -870,6 +870,46 @@
   margin-bottom: var(--space-6);
 }
 
+/* ─── Sebas Highlight ─── */
+.sebas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 6px;
+  vertical-align: middle;
+  border: 1px solid var(--accent-light);
+}
+.sebas-badge svg { width: 10px; height: 10px; }
+
+.sebas-row {
+  border-left: 3px solid var(--accent) !important;
+}
+tr.sebas-row { background: var(--accent-subtle) !important; }
+tr.sebas-row:hover { background: rgba(196,101,58,0.12) !important; }
+
+.sebas-card {
+  border: 2px solid var(--accent-light);
+}
+.sebas-card-banner {
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: #fff;
+  padding: 6px var(--space-6);
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.02em;
+}
+
 /* ─── Smooth Scroll ─── */
 html { scroll-behavior: smooth; }
 
