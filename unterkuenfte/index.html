@@ -548,15 +548,22 @@
     }).slice(0, 5);
     var bySqm = sorted.filter(function(h) { return h.sqm; }).sort(function(a, b) { return b.sqm - a.sqm; }).slice(0, 5);
 
-    document.getElementById('rankings').innerHTML =
-      '<div class="ranking-card"><h3>' + Icons.euro({size: 14}) + ' Preis-Leistung</h3>' + rl(byPPN, function(h) { return pricePPN(h) + ' \u20AC/P./N.'; }) + '</div>' +
-      '<div class="ranking-card"><h3>' + Icons.star({size: 14}) + ' Bewertung</h3>' + rl(byRating, function(h) { return ratingDisplay(h); }) + '</div>' +
-      '<div class="ranking-card"><h3>' + Icons.building({size: 14}) + ' Gr\u00F6\u00DFe</h3>' + rl(bySqm, function(h) { return h.sqm + ' m\u00B2'; }) + '</div>' +
-      '<div class="ranking-card"><h3>' + Icons.star({size: 14}) + ' Gesamtsieger</h3><ol class="ranking-list">' +
-        '<li class="winner"><span>' + medalHtml(0) + ' <strong>' + esc(byPPN[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Bestes P/L</span></li>' +
-        '<li><span>' + medalHtml(1) + ' <strong>' + esc(byRating[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Beste Bewertung</span></li>' +
-        '<li><span>' + medalHtml(2) + ' <strong>' + esc(bySqm[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Gr\u00F6\u00DFte</span></li>' +
-      '</ol></div>';
+    var rankHtml = '';
+    if (byPPN.length) rankHtml += '<div class="ranking-card"><h3>' + Icons.euro({size: 14}) + ' Preis-Leistung</h3>' + rl(byPPN, function(h) { return pricePPN(h) + ' \u20AC/P./N.'; }) + '</div>';
+    if (byRating.length) rankHtml += '<div class="ranking-card"><h3>' + Icons.star({size: 14}) + ' Bewertung</h3>' + rl(byRating, function(h) { return ratingDisplay(h); }) + '</div>';
+    if (bySqm.length) rankHtml += '<div class="ranking-card"><h3>' + Icons.building({size: 14}) + ' Gr\u00F6\u00DFe</h3>' + rl(bySqm, function(h) { return h.sqm + ' m\u00B2'; }) + '</div>';
+    var gesamtHtml = '<div class="ranking-card"><h3>' + Icons.star({size: 14}) + ' Gesamtsieger</h3>';
+    if (byPPN.length || byRating.length || bySqm.length) {
+      gesamtHtml += '<ol class="ranking-list">';
+      if (byPPN.length) gesamtHtml += '<li class="winner"><span>' + medalHtml(0) + ' <strong>' + esc(byPPN[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Bestes P/L</span></li>';
+      if (byRating.length) gesamtHtml += '<li><span>' + medalHtml(1) + ' <strong>' + esc(byRating[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Beste Bewertung</span></li>';
+      if (bySqm.length) gesamtHtml += '<li><span>' + medalHtml(2) + ' <strong>' + esc(bySqm[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Gr\u00F6\u00DFte</span></li>';
+      gesamtHtml += '</ol>';
+    } else {
+      gesamtHtml += '<p style="color:var(--gray-400);padding:var(--space-3)">Keine Unterk\u00FCnfte vorhanden</p>';
+    }
+    gesamtHtml += '</div>';
+    document.getElementById('rankings').innerHTML = rankHtml + gesamtHtml;
   }
 
   // ─── Feature Icon Mapping ───
@@ -854,9 +861,34 @@
       'Unterkunft l\u00F6schen?',
       '\u201C' + label + '\u201D wirklich l\u00F6schen? Diese Aktion kann nicht r\u00FCckg\u00E4ngig gemacht werden.',
       function() {
-        hotels = DataStore.remove(SECTION, id, HOTELS);
-        renderAll();
-        toast('Unterkunft gel\u00F6scht');
+        var cardEl = document.getElementById('hotel-' + id);
+
+        // Animate card out
+        if (cardEl) {
+          cardEl.style.maxHeight = cardEl.offsetHeight + 'px';
+          cardEl.offsetHeight; // force reflow
+          cardEl.classList.add('deleting');
+        }
+
+        // After animation: remove data + update all sections except cards
+        var delay = cardEl ? 450 : 0;
+        setTimeout(function() {
+          hotels = DataStore.remove(SECTION, id, HOTELS);
+          if (cardEl) cardEl.remove();
+
+          // Update all sections that depend on hotels data
+          renderHero();
+          initMap();
+          renderLegend();
+          renderTables();
+          renderRankings();
+          renderCompareStrip();
+          renderVoting();
+          setupQuickStats();
+          setupTOC();
+
+          toast('Unterkunft gel\u00F6scht');
+        }, delay);
       },
       { confirmLabel: 'L\u00F6schen', danger: true }
     );

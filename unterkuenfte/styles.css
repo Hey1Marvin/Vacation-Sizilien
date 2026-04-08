@@ -1050,6 +1050,20 @@
 .hotel-card:hover {
   box-shadow: var(--shadow-hover);
 }
+.hotel-card.deleting {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.97);
+  max-height: 0 !important;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
+  overflow: hidden;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease),
+              max-height 0.4s 0.1s var(--ease), margin 0.4s 0.1s var(--ease),
+              padding 0.4s 0.1s var(--ease), border-width 0.4s 0.1s var(--ease);
+}
 @media (prefers-reduced-motion: reduce) {
   .hotel-card { opacity: 1; transform: none; transition: box-shadow var(--duration-normal) var(--ease); }
 }
