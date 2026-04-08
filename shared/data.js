@@ -6,19 +6,37 @@
   var PREFIX = 'sizilien2026_';
 
   var DataStore = {
-    // Daten laden: defaults (Source) + localStorage-Extras mergen
+    // IDs die vom User gelöscht wurden
+    _deletedKey: function(section) { return PREFIX + section + '_deleted'; },
+    _getDeleted: function(section) {
+      try {
+        var d = localStorage.getItem(this._deletedKey(section));
+        return d ? JSON.parse(d) : [];
+      } catch(e) { return []; }
+    },
+    _addDeleted: function(section, id) {
+      var deleted = this._getDeleted(section);
+      if (deleted.indexOf(id) === -1) deleted.push(id);
+      localStorage.setItem(this._deletedKey(section), JSON.stringify(deleted));
+    },
+
+    // Daten laden: defaults (Source) + localStorage-Extras mergen, gelöschte rausfiltern
     get: function(section, defaults) {
       try {
         var stored = localStorage.getItem(PREFIX + section);
         if (stored) {
-          // Bei Array-Defaults: Source = Truth, localStorage-only Items bleiben erhalten
           if (defaults !== undefined && Array.isArray(defaults)) {
             var storedData = JSON.parse(stored);
+            var deleted = this._getDeleted(section);
             var defaultIds = {};
             defaults.forEach(function(d) { if (d.id) defaultIds[d.id] = true; });
-            var merged = JSON.parse(JSON.stringify(defaults));
+            // Defaults übernehmen, aber gelöschte rausfiltern
+            var merged = JSON.parse(JSON.stringify(defaults)).filter(function(d) {
+              return !d.id || deleted.indexOf(d.id) === -1;
+            });
+            // localStorage-only Items (user-added) dazufügen
             storedData.forEach(function(s) {
-              if (s.id && !defaultIds[s.id]) merged.push(s);
+              if (s.id && !defaultIds[s.id] && deleted.indexOf(s.id) === -1) merged.push(s);
             });
             this.set(section, merged);
             return merged;
@@ -70,17 +88,19 @@
       return data;
     },
 
-    // Item entfernen (fuer Arrays mit id-Feld)
+    // Item entfernen (fuer Arrays mit id-Feld) — merkt sich gelöschte Default-IDs
     remove: function(section, id, defaults) {
+      this._addDeleted(section, id);
       var data = this.get(section, defaults) || [];
       data = data.filter(function(d) { return d.id !== id; });
       this.set(section, data);
       return data;
     },
 
-    // Auf Defaults zuruecksetzen
+    // Auf Defaults zuruecksetzen (inkl. gelöschte IDs)
     reset: function(section) {
       localStorage.removeItem(PREFIX + section);
+      localStorage.removeItem(this._deletedKey(section));
     },
 
     // Alle Daten exportieren als JSON-String
