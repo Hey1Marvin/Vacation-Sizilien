@@ -108,8 +108,12 @@
       <div id="voter-select"></div>
     </div>
     <h3>W&auml;hle deine Top 3 Unterk&uuml;nfte</h3>
-    <p style="color:var(--gray-400);font-size:.85em;margin-bottom:15px">Klicke 1. / 2. / 3. um deine Favoriten zu markieren, oder <strong>&times;</strong> f&uuml;r &bdquo;gar nicht&ldquo;. Das Gruppenranking wird automatisch berechnet.</p>
+    <p style="color:var(--gray-400);font-size:.85em;margin-bottom:15px">Klicke 1. / 2. / 3. um deine Favoriten zu markieren, oder <strong>&times;</strong> f&uuml;r &bdquo;gar nicht&ldquo;. Dann klicke <strong>Speichern</strong>.</p>
     <div class="voting-grid" id="voting-grid"></div>
+    <div id="vote-save-bar" style="display:none;text-align:center;margin:16px 0">
+      <button onclick="saveVotes()" class="btn btn-primary" style="padding:10px 32px;font-size:1.1em">Abstimmung speichern</button>
+      <span id="vote-save-hint" style="display:block;margin-top:6px;color:var(--gray-400);font-size:.82em">Du hast ungespeicherte &Auml;nderungen</span>
+    </div>
     <h3 style="margin-top:20px">Gruppenranking</h3>
     <div id="borda-chart"></div>
   </div>
@@ -824,11 +828,42 @@
     btn.innerHTML = Icons.chevronDown({size: 14}) + (isOpen ? ' Weniger anzeigen' : ' Mehr Details anzeigen');
   };
 
-  // ─── Voting ───
+  // ─── Voting (lokal sammeln + Speichern-Button) ───
+  var _serverVotes = {};   // Votes vom Server (shared.json)
+  var _pendingVotes = {};  // Lokale Änderungen (noch nicht gespeichert)
+  var _votesLoaded = false;
+
+  function getMergedVotes() {
+    // Server-Votes + pending Overrides für aktuellen User
+    var userId = getActiveUser();
+    var merged = JSON.parse(JSON.stringify(_serverVotes));
+    if (userId) {
+      Object.keys(_pendingVotes).forEach(function(itemId) {
+        if (!merged[itemId]) merged[itemId] = {};
+        var val = _pendingVotes[itemId];
+        if (val === null || val === 0) {
+          delete merged[itemId][userId];
+        } else {
+          merged[itemId][userId] = val;
+        }
+      });
+    }
+    return merged;
+  }
+
+  function hasPendingVotes() {
+    return Object.keys(_pendingVotes).length > 0;
+  }
+
+  function updateSaveBar() {
+    var bar = document.getElementById('vote-save-bar');
+    if (bar) bar.style.display = hasPendingVotes() ? '' : 'none';
+  }
+
   function renderVoting() {
     document.getElementById('voter-select').innerHTML = renderPersonSelect('voter', 'onVoterChange(this.value)');
 
-    SizilienVoting.getVotes('unterkuenfte', function(votes) {
+    function doRender(votes) {
       var html = '';
       hotels.forEach(function(h) {
         var itemVotes = votes[h.id] || {};
@@ -845,7 +880,7 @@
       });
       document.getElementById('voting-grid').innerHTML = html;
 
-      // Only count votes for hotels that still exist
+      // Borda-Chart
       var activeIds = {};
       hotels.forEach(function(h) { activeIds[h.id] = true; });
       var filteredVotes = {};
@@ -857,7 +892,20 @@
         var h = hotels.find(function(x) { return String(x.id) === String(id); });
         return h ? h.name : 'Hotel ' + id;
       });
-    });
+      updateSaveBar();
+    }
+
+    if (!_votesLoaded) {
+      // Erster Load: vom Server holen
+      SizilienVoting.getVotes('unterkuenfte', function(votes) {
+        _serverVotes = votes;
+        _votesLoaded = true;
+        doRender(getMergedVotes());
+      });
+    } else {
+      // Danach: sofort aus Cache + pending rendern
+      doRender(getMergedVotes());
+    }
   }
 
   // ─── Delete Hotel ───
@@ -912,20 +960,58 @@
   // ─── Voter change ───
   window.onVoterChange = function(val) {
     setActiveUser(val);
+    _pendingVotes = {};
+    _votesLoaded = false;
     renderVoting();
   };
 
-  // ─── Ranked vote ───
+  // ─── Ranked vote (lokal sammeln, sofort anzeigen) ───
   window.voteRanked = function(sektion, itemId, rang) {
     var userId = getActiveUser();
     if (!userId) { toast('Bitte w\u00E4hle zuerst aus, wer du bist!'); return; }
-    SizilienVoting.castRankedVote(sektion, itemId, userId, rang, function(err) {
-      if (err) {
-        toast('Fehler beim Speichern \u2014 bitte nochmal versuchen!', 'error');
-      } else {
-        toast('Stimme abgegeben!');
+    _pendingVotes[itemId] = (rang === 0) ? null : rang;
+    renderVoting();
+  };
+
+  // ─── Alle Votes auf einmal speichern ───
+  window.saveVotes = function() {
+    var userId = getActiveUser();
+    if (!userId) { toast('Bitte w\u00E4hle zuerst aus, wer du bist!'); return; }
+    if (!hasPendingVotes()) return;
+
+    var btn = document.querySelector('#vote-save-bar button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Speichert...'; }
+
+    SizilienData.load(function(err, data) {
+      if (!data || !data.votes) {
+        toast('Fehler beim Laden \u2014 bitte nochmal versuchen!', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = 'Abstimmung speichern'; }
+        return;
       }
-      renderVoting();
+      if (!data.votes.unterkuenfte) data.votes.unterkuenfte = {};
+
+      // Alle pending votes in die Daten einarbeiten
+      Object.keys(_pendingVotes).forEach(function(itemId) {
+        if (!data.votes.unterkuenfte[itemId]) data.votes.unterkuenfte[itemId] = {};
+        var val = _pendingVotes[itemId];
+        if (val === null) {
+          delete data.votes.unterkuenfte[itemId][userId];
+        } else {
+          data.votes.unterkuenfte[itemId][userId] = val;
+        }
+      });
+
+      SizilienData.save(data, userId + ' voted on unterkuenfte', function(saveErr) {
+        if (btn) { btn.disabled = false; btn.textContent = 'Abstimmung speichern'; }
+        if (saveErr) {
+          toast('Fehler beim Speichern \u2014 bitte nochmal!', 'error');
+        } else {
+          _serverVotes = data.votes.unterkuenfte;
+          _pendingVotes = {};
+          toast('Abstimmung gespeichert!');
+          renderVoting();
+        }
+      });
     });
   };
 
