@@ -20,7 +20,10 @@
       localStorage.setItem(this._deletedKey(section), JSON.stringify(deleted));
     },
 
-    // Daten laden: defaults (Source) + localStorage-Extras mergen, gelöschte rausfiltern
+    // Daten laden: defaults (Source of Truth) + userAdded aus localStorage mergen
+    // Defaults kommen IMMER frisch aus der .js-Datei — localStorage-Kopien von
+    // Default-Items werden ignoriert, damit Änderungen an der Quelle (z.B.
+    // Hotel aus hotels.js entfernt + Push) bei allen Nutzern sofort greifen.
     get: function(section, defaults) {
       try {
         var stored = localStorage.getItem(PREFIX + section);
@@ -28,15 +31,13 @@
           if (defaults !== undefined && Array.isArray(defaults)) {
             var storedData = JSON.parse(stored);
             var deleted = this._getDeleted(section);
-            var defaultIds = {};
-            defaults.forEach(function(d) { if (d.id) defaultIds[d.id] = true; });
             // Defaults übernehmen, aber gelöschte rausfiltern
             var merged = JSON.parse(JSON.stringify(defaults)).filter(function(d) {
               return !d.id || deleted.indexOf(d.id) === -1;
             });
-            // localStorage-only Items (user-added) dazufügen
+            // Nur explizit userAdded Items aus localStorage übernehmen
             storedData.forEach(function(s) {
-              if (s.id && !defaultIds[s.id] && deleted.indexOf(s.id) === -1) merged.push(s);
+              if (s.userAdded && s.id && deleted.indexOf(s.id) === -1) merged.push(s);
             });
             this.set(section, merged);
             return merged;
@@ -58,6 +59,8 @@
     },
 
     // Einzelnes Item hinzufuegen (fuer Arrays)
+    // Markiert Items als userAdded damit sie in localStorage persistieren
+    // und nicht mit Default-Daten verwechselt werden.
     add: function(section, item, defaults) {
       var data = this.get(section, defaults) || [];
       // Auto-ID
@@ -66,6 +69,7 @@
         data.forEach(function(d) { if (d.id > maxId) maxId = d.id; });
         item.id = maxId + 1;
       }
+      item.userAdded = true;
       data.push(item);
       this.set(section, data);
       return data;
