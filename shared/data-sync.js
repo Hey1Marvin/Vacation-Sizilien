@@ -205,8 +205,6 @@ var SizilienData = (function() {
         var self = this;
         saveToGitHub(data, message, function(err) {
           if (err && err.conflict) {
-            // Auto-Retry: frische Daten laden, Aenderung nochmal drauflegen
-            if (typeof toast === 'function') toast('Synchronisiere...');
             self.load(function(_, freshData) {
               if (freshData) {
                 callback({ conflict: true, currentData: freshData });
@@ -218,10 +216,8 @@ var SizilienData = (function() {
           } else if (err) {
             // Fallback auf lokal
             setLocalData(data);
-            if (typeof toast === 'function') toast('Lokal gespeichert (offline)');
-            callback(null);
+            callback(err);
           } else {
-            if (typeof toast === 'function') toast('Gespeichert!');
             callback(null);
           }
         });
@@ -240,9 +236,12 @@ var SizilienData = (function() {
 
     // Hilfsfunktionen für häufige Operationen
     vote: function(sektion, itemId, userId, value, callback) {
+      callback = callback || function() {};
       var self = this;
+      var retries = 0;
       function doVote() {
         self.load(function(err, data) {
+          if (!data || !data.votes) { callback(err || new Error('Keine Daten')); return; }
           if (!data.votes[sektion]) data.votes[sektion] = {};
           if (!data.votes[sektion][itemId]) data.votes[sektion][itemId] = {};
           if (value === null || value === undefined) {
@@ -251,11 +250,11 @@ var SizilienData = (function() {
             data.votes[sektion][itemId][userId] = value;
           }
           self.save(data, userId + ' voted on ' + sektion + ' #' + itemId, function(saveErr) {
-            if (saveErr && saveErr.conflict) {
-              // Conflict: nochmal mit frischen Daten versuchen
+            if (saveErr && saveErr.conflict && retries < 3) {
+              retries++;
               _cache = null; _cacheTime = 0;
               doVote();
-            } else if (callback) {
+            } else {
               callback(saveErr);
             }
           });

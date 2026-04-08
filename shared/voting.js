@@ -14,14 +14,11 @@ var SizilienVoting = (function() {
   }
 
   // ── Ranked Choice Vote abgeben (rang=0 oder null entfernt die Stimme) ──
-  function castRankedVote(sektion, itemId, userId, rang) {
+  function castRankedVote(sektion, itemId, userId, rang, callback) {
+    callback = callback || function() {};
     if (typeof SizilienData !== 'undefined' && SizilienData.isConfigured()) {
-      if (rang === 0 || rang === null) {
-        // Stimme entfernen via SizilienData
-        SizilienData.vote(sektion, itemId, userId, null);
-      } else {
-        SizilienData.vote(sektion, itemId, userId, rang);
-      }
+      var value = (rang === 0 || rang === null) ? null : rang;
+      SizilienData.vote(sektion, itemId, userId, value, callback);
     } else {
       var votes = getLocalVotes();
       if (!votes[sektion]) votes[sektion] = {};
@@ -32,17 +29,18 @@ var SizilienVoting = (function() {
         votes[sektion][itemId][userId] = rang;
       }
       saveLocalVotes(votes);
+      callback(null);
     }
   }
 
   // ── Ja/Nein Vote ──
-  function castBoolVote(sektion, itemId, userId, value) {
-    castRankedVote(sektion, itemId, userId, value);
+  function castBoolVote(sektion, itemId, userId, value, callback) {
+    castRankedVote(sektion, itemId, userId, value, callback);
   }
 
   // ── Poll Vote ──
-  function castPollVote(pollId, userId, optionId) {
-    castRankedVote('polls', pollId, userId, optionId);
+  function castPollVote(pollId, userId, optionId, callback) {
+    castRankedVote('polls', pollId, userId, optionId, callback);
   }
 
   // ── Votes laden ──

@@ -883,7 +883,11 @@
           if (cardEl) cardEl.remove();
 
           // Global löschen (shared.json) — räumt auch Votes auf
-          SizilienData.deleteHotel(id, function() {
+          SizilienData.deleteHotel(id, function(err) {
+            if (err) {
+              toast('Fehler beim L\u00F6schen \u2014 bitte nochmal versuchen!', 'error');
+              return;
+            }
             hotels = hotels.filter(function(h) { return h.id !== id; });
 
             // Update all sections that depend on hotels data
@@ -915,9 +919,14 @@
   window.voteRanked = function(sektion, itemId, rang) {
     var userId = getActiveUser();
     if (!userId) { toast('Bitte w\u00E4hle zuerst aus, wer du bist!'); return; }
-    SizilienVoting.castRankedVote(sektion, itemId, userId, rang);
-    renderVoting();
-    toast('Stimme abgegeben!');
+    SizilienVoting.castRankedVote(sektion, itemId, userId, rang, function(err) {
+      if (err) {
+        toast('Fehler beim Speichern \u2014 bitte nochmal versuchen!', 'error');
+      } else {
+        toast('Stimme abgegeben!');
+      }
+      renderVoting();
+    });
   };
 
   // ─── Export ───
