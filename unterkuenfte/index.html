@@ -304,17 +304,33 @@
   var markerData = [];
   var connectorLines = [];
 
+  // Flughafen Palermo Falcone-Borsellino (PMO)
+  var AIRPORT = { lat: 38.1760, lng: 13.0910, name: 'Flughafen Palermo (PMO)' };
+
   function initMap() {
     if (map) map.remove();
     markerData = [];
     connectorLines = [];
-    var center = config.mapCenter || { lat: 38.145, lng: 13.30 };
-    var zoom = config.mapZoom || 12;
-    map = L.map('map').setView([center.lat, center.lng], zoom);
+    map = L.map('map');
     tileLayer = L.tileLayer(currentTheme === 'dark' ? DARK_TILES : LIGHT_TILES, {
       attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
     }).addTo(map);
 
+    // Bounds sammeln um alle Marker einzupassen
+    var bounds = L.latLngBounds([]);
+
+    // Flughafen-Marker
+    var airportIcon = L.divIcon({
+      className: '',
+      html: '<div class="custom-marker" style="background:#555;font-size:14px">\u2708</div>',
+      iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -18]
+    });
+    L.marker([AIRPORT.lat, AIRPORT.lng], { icon: airportIcon })
+      .addTo(map)
+      .bindPopup('<div style="font-family:Inter,sans-serif"><strong>\u2708 ' + esc(AIRPORT.name) + '</strong></div>');
+    bounds.extend([AIRPORT.lat, AIRPORT.lng]);
+
+    // Hotel-Marker
     hotels.forEach(function(h) {
       if (!h.mapLat || !h.mapLng) return;
       var icon = L.divIcon({
@@ -334,7 +350,15 @@
             Icons.externalLink({size: 12}) + ' Auf ' + esc(h.platform) + ' ansehen</a>' +
         '</div>');
       markerData.push({ marker: marker, origLat: h.mapLat, origLng: h.mapLng, color: h.colors.marker });
+      bounds.extend([h.mapLat, h.mapLng]);
     });
+
+    // Zoom so dass alle Marker sichtbar sind
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
+    } else {
+      map.setView([38.145, 13.30], 10);
+    }
 
     spreadOverlappingMarkers();
     map.on('zoomend', spreadOverlappingMarkers);
