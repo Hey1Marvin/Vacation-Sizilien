@@ -828,31 +828,40 @@
     btn.innerHTML = Icons.chevronDown({size: 14}) + (isOpen ? ' Weniger anzeigen' : ' Mehr Details anzeigen');
   };
 
-  // ─── Voting (lokal sammeln + Speichern-Button) ───
-  var _serverVotes = {};   // Votes vom Server (shared.json)
-  var _pendingVotes = {};  // Lokale Änderungen (noch nicht gespeichert)
-  var _votesLoaded = false;
+  // ─── Voting (localStorage sofort + Server-Sync bei Speichern) ───
+  var PENDING_KEY = 'sizilien2026_pending_votes';
 
-  function getMergedVotes() {
-    // Server-Votes + pending Overrides für aktuellen User
+  function getPending() {
+    try { return JSON.parse(localStorage.getItem(PENDING_KEY)) || {}; } catch(e) { return {}; }
+  }
+  function setPending(p) {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(p));
+  }
+
+  // Lokale Votes: Server-Votes + localStorage Votes mergen
+  function getLocalVotesForDisplay() {
+    var local = {};
+    try { local = JSON.parse(localStorage.getItem('sizilien2026_votes')) || {}; } catch(e) {}
+    var sectionVotes = local.unterkuenfte || {};
+    // Pending drüberlegen
     var userId = getActiveUser();
-    var merged = JSON.parse(JSON.stringify(_serverVotes));
-    if (userId) {
-      Object.keys(_pendingVotes).forEach(function(itemId) {
-        if (!merged[itemId]) merged[itemId] = {};
-        var val = _pendingVotes[itemId];
-        if (val === null || val === 0) {
-          delete merged[itemId][userId];
+    var pending = getPending();
+    if (userId && Object.keys(pending).length) {
+      Object.keys(pending).forEach(function(itemId) {
+        if (!sectionVotes[itemId]) sectionVotes[itemId] = {};
+        var val = pending[itemId];
+        if (val === null) {
+          delete sectionVotes[itemId][userId];
         } else {
-          merged[itemId][userId] = val;
+          sectionVotes[itemId][userId] = val;
         }
       });
     }
-    return merged;
+    return sectionVotes;
   }
 
   function hasPendingVotes() {
-    return Object.keys(_pendingVotes).length > 0;
+    return Object.keys(getPending()).length > 0;
   }
 
   function updateSaveBar() {
@@ -860,52 +869,51 @@
     if (bar) bar.style.display = hasPendingVotes() ? '' : 'none';
   }
 
+  function doRenderVoting(votes) {
+    var html = '';
+    hotels.forEach(function(h) {
+      var itemVotes = votes[h.id] || {};
+      var sebas = isSebas(h);
+      html += '<div class="voting-item' + (sebas ? ' sebas-row' : '') + '">' +
+        '<div class="voting-item-name">' +
+          '<span class="marker-num" style="background:' + h.colors.marker + '">' + h.id + '</span>' +
+          esc(h.name) +
+          (sebas ? ' <span class="sebas-badge">' + Icons.users({size: 10}) + ' Sebas</span>' : '') +
+          ' <small style="color:var(--gray-400)">' + h.totalPrice + '\u20AC</small>' +
+        '</div>' +
+        SizilienVoting.renderRankedVotingCard(h.id, h.name, 'unterkuenfte', itemVotes, 3) +
+      '</div>';
+    });
+    document.getElementById('voting-grid').innerHTML = html;
+
+    // Borda-Chart
+    var activeIds = {};
+    hotels.forEach(function(h) { activeIds[h.id] = true; });
+    var filteredVotes = {};
+    Object.keys(votes).forEach(function(key) {
+      if (activeIds[key] || activeIds[Number(key)]) filteredVotes[key] = votes[key];
+    });
+    var scores = SizilienVoting.bordaCount(filteredVotes, 3);
+    document.getElementById('borda-chart').innerHTML = SizilienVoting.renderBordaChart(scores, hotels, function(id) {
+      var h = hotels.find(function(x) { return String(x.id) === String(id); });
+      return h ? h.name : 'Hotel ' + id;
+    });
+    updateSaveBar();
+  }
+
   function renderVoting() {
     document.getElementById('voter-select').innerHTML = renderPersonSelect('voter', 'onVoterChange(this.value)');
-
-    function doRender(votes) {
-      var html = '';
-      hotels.forEach(function(h) {
-        var itemVotes = votes[h.id] || {};
-        var sebas = isSebas(h);
-        html += '<div class="voting-item' + (sebas ? ' sebas-row' : '') + '">' +
-          '<div class="voting-item-name">' +
-            '<span class="marker-num" style="background:' + h.colors.marker + '">' + h.id + '</span>' +
-            esc(h.name) +
-            (sebas ? ' <span class="sebas-badge">' + Icons.users({size: 10}) + ' Sebas</span>' : '') +
-            ' <small style="color:var(--gray-400)">' + h.totalPrice + '\u20AC</small>' +
-          '</div>' +
-          SizilienVoting.renderRankedVotingCard(h.id, h.name, 'unterkuenfte', itemVotes, 3) +
-        '</div>';
-      });
-      document.getElementById('voting-grid').innerHTML = html;
-
-      // Borda-Chart
-      var activeIds = {};
-      hotels.forEach(function(h) { activeIds[h.id] = true; });
-      var filteredVotes = {};
-      Object.keys(votes).forEach(function(key) {
-        if (activeIds[key] || activeIds[Number(key)]) filteredVotes[key] = votes[key];
-      });
-      var scores = SizilienVoting.bordaCount(filteredVotes, 3);
-      document.getElementById('borda-chart').innerHTML = SizilienVoting.renderBordaChart(scores, hotels, function(id) {
-        var h = hotels.find(function(x) { return String(x.id) === String(id); });
-        return h ? h.name : 'Hotel ' + id;
-      });
-      updateSaveBar();
-    }
-
-    if (!_votesLoaded) {
-      // Erster Load: vom Server holen
-      SizilienVoting.getVotes('unterkuenfte', function(votes) {
-        _serverVotes = votes;
-        _votesLoaded = true;
-        doRender(getMergedVotes());
-      });
-    } else {
-      // Danach: sofort aus Cache + pending rendern
-      doRender(getMergedVotes());
-    }
+    // Sofort aus localStorage rendern (0 Wartezeit)
+    doRenderVoting(getLocalVotesForDisplay());
+    // Im Hintergrund Server-Daten holen und localStorage aktualisieren
+    SizilienVoting.getVotes('unterkuenfte', function(serverVotes) {
+      try {
+        var local = JSON.parse(localStorage.getItem('sizilien2026_votes')) || {};
+        local.unterkuenfte = serverVotes;
+        localStorage.setItem('sizilien2026_votes', JSON.stringify(local));
+      } catch(e) {}
+      doRenderVoting(getLocalVotesForDisplay());
+    });
   }
 
   // ─── Delete Hotel ───
@@ -960,24 +968,26 @@
   // ─── Voter change ───
   window.onVoterChange = function(val) {
     setActiveUser(val);
-    _pendingVotes = {};
-    _votesLoaded = false;
     renderVoting();
   };
 
-  // ─── Ranked vote (lokal sammeln, sofort anzeigen) ───
+  // ─── Ranked vote (sofort lokal, kein Server-Call) ───
   window.voteRanked = function(sektion, itemId, rang) {
     var userId = getActiveUser();
     if (!userId) { toast('Bitte w\u00E4hle zuerst aus, wer du bist!'); return; }
-    _pendingVotes[itemId] = (rang === 0) ? null : rang;
-    renderVoting();
+    var pending = getPending();
+    pending[itemId] = (rang === 0) ? null : rang;
+    setPending(pending);
+    // Sofort UI updaten (alles lokal, 0ms)
+    doRenderVoting(getLocalVotesForDisplay());
   };
 
-  // ─── Alle Votes auf einmal speichern ───
+  // ─── Alle Votes auf einmal zum Server senden ───
   window.saveVotes = function() {
     var userId = getActiveUser();
     if (!userId) { toast('Bitte w\u00E4hle zuerst aus, wer du bist!'); return; }
-    if (!hasPendingVotes()) return;
+    var pending = getPending();
+    if (!Object.keys(pending).length) return;
 
     var btn = document.querySelector('#vote-save-bar button');
     if (btn) { btn.disabled = true; btn.textContent = 'Speichert...'; }
@@ -990,10 +1000,10 @@
       }
       if (!data.votes.unterkuenfte) data.votes.unterkuenfte = {};
 
-      // Alle pending votes in die Daten einarbeiten
-      Object.keys(_pendingVotes).forEach(function(itemId) {
+      // Alle pending votes in die Server-Daten einarbeiten
+      Object.keys(pending).forEach(function(itemId) {
         if (!data.votes.unterkuenfte[itemId]) data.votes.unterkuenfte[itemId] = {};
-        var val = _pendingVotes[itemId];
+        var val = pending[itemId];
         if (val === null) {
           delete data.votes.unterkuenfte[itemId][userId];
         } else {
@@ -1006,10 +1016,15 @@
         if (saveErr) {
           toast('Fehler beim Speichern \u2014 bitte nochmal!', 'error');
         } else {
-          _serverVotes = data.votes.unterkuenfte;
-          _pendingVotes = {};
+          // Pending leeren, localStorage mit Server-Daten updaten
+          setPending({});
+          try {
+            var local = JSON.parse(localStorage.getItem('sizilien2026_votes')) || {};
+            local.unterkuenfte = data.votes.unterkuenfte;
+            localStorage.setItem('sizilien2026_votes', JSON.stringify(local));
+          } catch(e) {}
           toast('Abstimmung gespeichert!');
-          renderVoting();
+          doRenderVoting(getLocalVotesForDisplay());
         }
       });
     });
