@@ -494,6 +494,56 @@ const HOTELS = [
     mapLat: 38.0720,
     mapLng: 13.0380
   },
+  {
+    id: 19,
+    name: "House of Lady",
+    type: "Ferienwohnung (ganze Wohnung)",
+    location: "Carini",
+    address: "Via Foca 7, 90044 Carini",
+    platform: "Booking.com",
+    link: "https://www.booking.com/hotel/it/house-of-lady.html",
+    selectedBy: "",
+    dateFrom: "2026-06-22",
+    dateTo: "2026-06-29",
+    nights: 7,
+    persons: 5,
+    totalPrice: 718,
+    originalPrice: null,
+    rating: 9.4,
+    ratingCount: 23,
+    ratingCategories: { personal: 10.0, ausstattung: 9.6, sauberkeit: 10.0, komfort: 10.0, preisLeistung: 9.6, lage: 8.3, wlan: 8.7 },
+    sqm: 110,
+    bedrooms: 3,
+    bathrooms: 2,
+    beds: "SZ1: Doppelbett / SZ2: 2 Einzelbetten / SZ3: Doppelbett",
+    maxGuests: 5,
+    features: ["Meerblick", "Terrasse", "3 Schlafzimmer!", "2 Badezimmer", "Klimaanlage", "WLAN", "Küche (komplett)", "Waschmaschine", "Kaffeemaschine", "Flachbild-TV", "Schallschutz", "Haustiere erlaubt", "Flughafentransfer"],
+    parking: "Gratis Privatparkplatz",
+    cancellation: { free: true, note: "Kostenlos bis 21.06." },
+    checkin: "15:00 - 18:00",
+    checkout: "08:00 - 11:00",
+    host: "Piero (Sohn spricht Englisch)",
+    booking: "Buchungsanfrage (24h Antwort)",
+    distances: { palermo: "~21 km", strand: "2,2 km", bahnhof: "1,8 km (Carini Torre Ciachea)", flughafen: "10 km" },
+    pros: ["110m² - riesig für 5 Personen!", "3 Schlafzimmer + 2 Bäder (top!)", "9,4/10 Bewertung (Wonderful)", "Personal: perfekte 10/10", "Gratis Parkplatz auf Grundstück", "Kostenlos stornierbar bis 21.06.", "Meerblick + Terrasse"],
+    cons: ["~21 km bis Palermo Zentrum", "Buchungsanfrage nötig (24h)", "Check-in nur 15-18 Uhr", "Privatstrand-Bereich (kein Sandstrand)", "Nur über Treppe erreichbar"],
+    quotes: [
+      { text: "As a group of five friends we really enjoyed our stay. Private parking on property was an enjoyable benefit.", author: "Hubert, PL" },
+      { text: "Big Apartment for max 6 people with two toilets and very good air conditioning in every bedroom.", author: "Maximilian, AT" },
+      { text: "Appartamento completo di tutto, il signor Piero è un host eccezionale e la casa è ampia e pulitissima.", author: "Federica, IT" }
+    ],
+    photos: [
+      { icon: "\u{1F6CC}", desc: "Schlafzimmer mit Doppelbett" },
+      { icon: "\u{1F6C0}", desc: "Badezimmer mit Dusche" },
+      { icon: "\u{1F373}", desc: "Küche mit Essbereich" },
+      { icon: "\u{1F305}", desc: "Terrasse mit Meerblick" },
+      { icon: "\u{1F3D6}", desc: "Strand in der Nähe" }
+    ],
+    photoCount: "35+",
+    colors: { header: "linear-gradient(135deg,#6c3483,#a569bd)", num: "#5b2c6f", marker: "#a569bd" },
+    mapLat: 38.1690,
+    mapLng: 13.2280
+  },
 
   // ═══════════════════════════════════════════════
   //  WEITERE UNTERKÜNFTE
