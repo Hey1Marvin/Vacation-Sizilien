@@ -1,10 +1,13 @@
-// ─── Cloudflare Worker: GitHub OAuth + URL Scraper Proxy ───
+// ─── Cloudflare Worker: Data Sync + GitHub OAuth + URL Scraper ───
 // Deploy: wrangler deploy
 //
 // Environment Variables (im Cloudflare Dashboard setzen):
-//   GITHUB_CLIENT_ID     - OAuth App Client ID
-//   GITHUB_CLIENT_SECRET - OAuth App Client Secret
+//   GITHUB_PAT           - Fine-grained PAT (Contents:write auf Vacation-Sizilien)
+//   REPO_OWNER           - z.B. 'Hey1Marvin'
+//   REPO_NAME            - z.B. 'Vacation-Sizilien'
 //   ALLOWED_ORIGIN       - z.B. https://hey1marvin.github.io
+//   GITHUB_CLIENT_ID     - OAuth App Client ID (optional)
+//   GITHUB_CLIENT_SECRET - OAuth App Client Secret (optional)
 
 export default {
   async fetch(request, env) {
@@ -16,6 +19,11 @@ export default {
     }
 
     const url = new URL(request.url);
+
+    // ── POST /sync — Shared Data schreiben (kein Auth nötig, CORS-geschützt) ──
+    if (request.method === 'POST' && url.pathname === '/sync') {
+      return handleSync(request, env, origin);
+    }
 
     // ── POST /token — GitHub OAuth ──
     if (request.method === 'POST' && url.pathname === '/token') {
@@ -30,6 +38,73 @@ export default {
     return new Response('Not Found', { status: 404 });
   }
 };
+
+// ── Sync: shared.json via GitHub Contents API schreiben ──
+async function handleSync(request, env, origin) {
+  try {
+    const body = await request.json();
+
+    if (!body.data || typeof body.data !== 'object') {
+      return jsonResponse({ error: 'invalid_data', message: 'Daten fehlen' }, 400, origin);
+    }
+    if (!env.GITHUB_PAT || !env.REPO_OWNER || !env.REPO_NAME) {
+      return jsonResponse({ error: 'not_configured', message: 'Worker nicht konfiguriert' }, 500, origin);
+    }
+
+    const repoOwner = env.REPO_OWNER;
+    const repoName = env.REPO_NAME;
+    const dataPath = 'data/shared.json';
+    const branch = 'main';
+    const apiBase = 'https://api.github.com';
+    const authHeaders = {
+      'Authorization': 'token ' + env.GITHUB_PAT,
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'SizilienSyncWorker'
+    };
+
+    // SHA ermitteln (vom Client oder frisch von GitHub)
+    let sha = body.sha;
+    if (!sha) {
+      const getRes = await fetch(
+        apiBase + '/repos/' + repoOwner + '/' + repoName + '/contents/' + dataPath + '?ref=' + branch,
+        { headers: authHeaders }
+      );
+      if (!getRes.ok) {
+        return jsonResponse({ error: 'fetch_failed', message: 'Konnte Datei nicht lesen (HTTP ' + getRes.status + ')' }, 502, origin);
+      }
+      const fileData = await getRes.json();
+      sha = fileData.sha;
+    }
+
+    // Daten schreiben
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(body.data, null, 2))));
+    const putRes = await fetch(
+      apiBase + '/repos/' + repoOwner + '/' + repoName + '/contents/' + dataPath,
+      {
+        method: 'PUT',
+        headers: { ...authHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: body.message || 'Update shared data',
+          content: content,
+          sha: sha,
+          branch: branch
+        })
+      }
+    );
+
+    if (putRes.status === 409) {
+      return jsonResponse({ error: 'conflict', message: 'Gleichzeitige Aenderung — bitte neu laden' }, 409, origin);
+    }
+    if (!putRes.ok) {
+      return jsonResponse({ error: 'write_failed', message: 'GitHub Schreibfehler (HTTP ' + putRes.status + ')' }, 502, origin);
+    }
+
+    const result = await putRes.json();
+    return jsonResponse({ ok: true, sha: result.content.sha }, 200, origin);
+  } catch (err) {
+    return jsonResponse({ error: 'server_error', message: err.message }, 500, origin);
+  }
+}
 
 // ── GitHub OAuth Token Exchange ──
 async function handleToken(request, env, origin) {

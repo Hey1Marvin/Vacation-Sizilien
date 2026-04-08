@@ -1,13 +1,14 @@
 // ─── Shared Data Sync via GitHub Contents API ───
-// Liest und schreibt data/shared.json im Repo.
-// Erfordert GitHub Auth Token für Schreibzugriff.
+// Liest data/shared.json direkt von GitHub (public repo = kein Auth nötig).
+// Schreibt über Cloudflare Worker (hält GitHub PAT serverseitig).
 
 var SizilienData = (function() {
   // ── Konfiguration ──
-  var REPO_OWNER = '';  // z.B. 'Hey1Marvin'
-  var REPO_NAME = '';   // z.B. 'Vacation-Sizilien'
+  var REPO_OWNER = 'Hey1Marvin';
+  var REPO_NAME = 'Vacation-Sizilien';
   var DATA_PATH = 'data/shared.json';
   var BRANCH = 'main';
+  var WORKER_URL = ''; // z.B. 'https://sizilien-sync.marvin.workers.dev' — nach Deploy setzen
 
   var API_BASE = 'https://api.github.com';
   var _cache = null;
@@ -45,7 +46,7 @@ var SizilienData = (function() {
     return !!REPO_OWNER && !!REPO_NAME;
   }
 
-  // ── GitHub API: Lesen ──
+  // ── GitHub API: Lesen (public repo = kein Token nötig) ──
   function loadFromGitHub(callback) {
     // Cache prüfen
     if (_cache && (Date.now() - _cacheTime) < CACHE_TTL) {
@@ -55,7 +56,8 @@ var SizilienData = (function() {
 
     var url = API_BASE + '/repos/' + REPO_OWNER + '/' + REPO_NAME + '/contents/' + DATA_PATH + '?ref=' + BRANCH;
     var headers = { 'Accept': 'application/vnd.github.v3+json' };
-    var token = SizilienAuth.getToken();
+    // Token optional (public repo braucht keinen)
+    var token = (typeof SizilienAuth !== 'undefined') ? SizilienAuth.getToken() : null;
     if (token) headers['Authorization'] = 'token ' + token;
 
     fetch(url, { headers: headers })
@@ -77,15 +79,61 @@ var SizilienData = (function() {
     });
   }
 
-  // ── GitHub API: Schreiben ──
+  // ── Schreiben via Cloudflare Worker (kein Auth nötig, CORS-geschützt) ──
+  function saveViaWorker(data, message, callback) {
+    data.lastUpdated = new Date().toISOString();
+    data.lastUpdatedBy = (typeof getActiveUser === 'function') ? (getActiveUser() || '') : '';
+
+    fetch(WORKER_URL + '/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data: data,
+        message: message || 'Update shared data',
+        sha: _cacheSha
+      })
+    })
+    .then(function(res) {
+      if (res.status === 409) throw { conflict: true };
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(result) {
+      _cache = data;
+      _cacheSha = result.sha;
+      _cacheTime = Date.now();
+      setLocalData(data);
+      callback(null);
+    })
+    .catch(function(err) {
+      if (err.conflict) {
+        // Neu laden und Konflikt melden
+        loadFromGitHub(function(loadErr, freshData) {
+          if (loadErr) { callback(loadErr); return; }
+          callback({ conflict: true, currentData: freshData });
+        });
+      } else {
+        callback(err);
+      }
+    });
+  }
+
+  // ── GitHub API: Direkt schreiben (mit Token, falls vorhanden) ──
   function saveToGitHub(data, message, callback) {
-    var token = SizilienAuth.getToken();
+    var token = (typeof SizilienAuth !== 'undefined') ? SizilienAuth.getToken() : null;
+
+    // Kein Token? → Worker nutzen wenn verfügbar
+    if (!token && WORKER_URL) {
+      return saveViaWorker(data, message, callback);
+    }
     if (!token) {
-      callback(new Error('Nicht angemeldet'));
+      // Kein Token, kein Worker → lokal speichern
+      setLocalData(data);
+      callback(null);
       return;
     }
 
-    var user = SizilienAuth.getUser();
+    var user = (typeof SizilienAuth !== 'undefined') ? SizilienAuth.getUser() : null;
     data.lastUpdated = new Date().toISOString();
     data.lastUpdatedBy = user ? user.login : '';
 
@@ -107,10 +155,7 @@ var SizilienData = (function() {
       body: JSON.stringify(body)
     })
     .then(function(res) {
-      if (res.status === 409) {
-        // Konflikt: re-fetch und retry
-        throw { conflict: true };
-      }
+      if (res.status === 409) throw { conflict: true };
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
     })
@@ -123,7 +168,6 @@ var SizilienData = (function() {
     })
     .catch(function(err) {
       if (err.conflict) {
-        // Retry: neu laden und nochmal versuchen
         loadFromGitHub(function(loadErr, freshData) {
           if (loadErr) { callback(loadErr); return; }
           callback({ conflict: true, currentData: freshData });
@@ -138,7 +182,7 @@ var SizilienData = (function() {
   return {
     // Daten laden (GitHub oder lokal)
     load: function(callback) {
-      if (isConfigured() && typeof SizilienAuth !== 'undefined') {
+      if (isConfigured()) {
         loadFromGitHub(function(err, data) {
           if (err) {
             // Fallback auf lokale Daten
@@ -152,15 +196,24 @@ var SizilienData = (function() {
       }
     },
 
-    // Daten speichern (GitHub oder lokal)
+    // Daten speichern (GitHub/Worker oder lokal)
     save: function(data, message, callback) {
       callback = callback || function() {};
-      if (isConfigured() && SizilienAuth.isLoggedIn()) {
+      var hasAuth = (typeof SizilienAuth !== 'undefined' && SizilienAuth.isLoggedIn());
+      if (isConfigured() && (hasAuth || WORKER_URL)) {
+        var self = this;
         saveToGitHub(data, message, function(err) {
           if (err && err.conflict) {
-            // Konflikt: User informieren
-            if (typeof toast === 'function') toast('Konflikt! Daten wurden aktualisiert. Bitte erneut versuchen.');
-            callback(err);
+            // Auto-Retry: frische Daten laden, Aenderung nochmal drauflegen
+            if (typeof toast === 'function') toast('Synchronisiere...');
+            self.load(function(_, freshData) {
+              if (freshData) {
+                callback({ conflict: true, currentData: freshData });
+              } else {
+                setLocalData(data);
+                callback(null);
+              }
+            });
           } else if (err) {
             // Fallback auf lokal
             setLocalData(data);
@@ -187,12 +240,27 @@ var SizilienData = (function() {
     // Hilfsfunktionen für häufige Operationen
     vote: function(sektion, itemId, userId, value, callback) {
       var self = this;
-      self.load(function(err, data) {
-        if (!data.votes[sektion]) data.votes[sektion] = {};
-        if (!data.votes[sektion][itemId]) data.votes[sektion][itemId] = {};
-        data.votes[sektion][itemId][userId] = value;
-        self.save(data, userId + ' voted on ' + sektion + ' #' + itemId, callback);
-      });
+      function doVote() {
+        self.load(function(err, data) {
+          if (!data.votes[sektion]) data.votes[sektion] = {};
+          if (!data.votes[sektion][itemId]) data.votes[sektion][itemId] = {};
+          if (value === null || value === undefined) {
+            delete data.votes[sektion][itemId][userId];
+          } else {
+            data.votes[sektion][itemId][userId] = value;
+          }
+          self.save(data, userId + ' voted on ' + sektion + ' #' + itemId, function(saveErr) {
+            if (saveErr && saveErr.conflict) {
+              // Conflict: nochmal mit frischen Daten versuchen
+              _cache = null; _cacheTime = 0;
+              doVote();
+            } else if (callback) {
+              callback(saveErr);
+            }
+          });
+        });
+      }
+      doVote();
     },
 
     addComment: function(sektion, itemId, userId, text, callback) {
