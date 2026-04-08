@@ -845,7 +845,14 @@
       });
       document.getElementById('voting-grid').innerHTML = html;
 
-      var scores = SizilienVoting.bordaCount(votes, 3);
+      // Only count votes for hotels that still exist
+      var activeIds = {};
+      hotels.forEach(function(h) { activeIds[h.id] = true; });
+      var filteredVotes = {};
+      Object.keys(votes).forEach(function(key) {
+        if (activeIds[key] || activeIds[Number(key)]) filteredVotes[key] = votes[key];
+      });
+      var scores = SizilienVoting.bordaCount(filteredVotes, 3);
       document.getElementById('borda-chart').innerHTML = SizilienVoting.renderBordaChart(scores, hotels, function(id) {
         var h = hotels.find(function(x) { return String(x.id) === String(id); });
         return h ? h.name : 'Hotel ' + id;
@@ -870,11 +877,29 @@
           cardEl.classList.add('deleting');
         }
 
-        // After animation: remove data + update all sections except cards
+        // After animation: remove data + clean up votes/comments + update sections
         var delay = cardEl ? 450 : 0;
         setTimeout(function() {
           hotels = DataStore.remove(SECTION, id, HOTELS);
           if (cardEl) cardEl.remove();
+
+          // Clean up orphaned votes for this hotel
+          try {
+            var voteKey = 'sizilien2026_votes';
+            var allVotes = JSON.parse(localStorage.getItem(voteKey) || '{}');
+            if (allVotes.unterkuenfte && allVotes.unterkuenfte[id]) {
+              delete allVotes.unterkuenfte[id];
+              localStorage.setItem(voteKey, JSON.stringify(allVotes));
+            }
+          } catch(e) {}
+
+          // Clean up orphaned comments for this hotel
+          try {
+            var commentKey = 'sizilien2026_kommentare';
+            var comments = JSON.parse(localStorage.getItem(commentKey) || '[]');
+            var cleaned = comments.filter(function(c) { return !(c.sektion === 'unterkuenfte' && String(c.itemId) === String(id)); });
+            if (cleaned.length !== comments.length) localStorage.setItem(commentKey, JSON.stringify(cleaned));
+          } catch(e) {}
 
           // Update all sections that depend on hotels data
           renderHero();
