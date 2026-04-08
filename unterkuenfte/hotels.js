@@ -398,6 +398,59 @@ const HOTELS = [
   },
 
   // ═══════════════════════════════════════════════
+  //  MEINE AUSWAHL
+  // ═══════════════════════════════════════════════
+  {
+    id: 17,
+    name: "Villa Salvatore",
+    type: "Pension (B&B)",
+    location: "Capaci",
+    address: "Via San Giuseppe Maria Tomasi 35, 90044 Capaci",
+    platform: "Booking.com",
+    link: "https://www.booking.com/hotel/it/villa-salvatore-palermo.de.html",
+    selectedBy: "",
+    dateFrom: "2026-06-22",
+    dateTo: "2026-06-29",
+    nights: 7,
+    persons: 5,
+    totalPrice: 672,
+    originalPrice: 725,
+    rating: 8.0,
+    ratingCount: 137,
+    ratingCategories: { personal: 8.0, ausstattung: 8.5, sauberkeit: 8.8, komfort: 8.9, preisLeistung: 8.7, lage: 7.3, wlan: 8.8 },
+    sqm: 32,
+    bedrooms: 1,
+    bathrooms: 1,
+    beds: "1 Einzelbett + 2 Doppelbetten",
+    maxGuests: 5,
+    features: ["Balkon (Garten-/Bergblick)", "Klimaanlage", "WLAN", "Terrasse", "Kaffeemaschine", "Flachbild-TV", "Waschmaschine", "Bar", "Garten", "Frühstück"],
+    parking: "",
+    cancellation: { free: false, note: "Nicht kostenlos stornierbar" },
+    checkin: "16:00 - 23:30",
+    checkout: "05:00 - 10:00",
+    host: "Angelica (spricht EN, ES, IT, RO)",
+    distances: { palermo: "21 km", strand: "2,8 km", bahnhof: "1,6 km (Capaci)", flughafen: "12 km" },
+    pros: ["Günstig: nur 672€ für 7 Nächte!", "Frühstück inklusive", "Großer Balkon mit Berg-/Gartenblick", "Sehr sauber (8,8/10)", "Nah am Flughafen (12 km)", "137 Bewertungen - gut belegt"],
+    cons: ["21 km bis Palermo Zentrum", "Kein Parkplatz", "Nicht stornierbar", "Nur über Treppe erreichbar", "Ruhezeit 21-09 Uhr"],
+    quotes: [
+      { text: "Zimmer war mit großem Balkon, Blick auf die Landschaft. Zimmer sauber, alles Nötige vorhanden.", author: "Jeanina, AT" },
+      { text: "Sehr freundliche Gastgeberin, tolle Aussicht und tolles Frühstück!", author: "Carlotta, DK" },
+      { text: "Unterkunft sehr sauber, liebevolles Frühstück und Gastgeber sehr freundlich", author: "Matthias, DE" }
+    ],
+    photos: [
+      { icon: "\u{1F6CC}", desc: "Schlafzimmer mit rot-weißem Bett" },
+      { icon: "\u{1F305}", desc: "Balkon mit Tisch und Aussicht" },
+      { icon: "\u{1F6C0}", desc: "Badezimmer mit Dusche" },
+      { icon: "\u{1F33F}", desc: "Garten und Terrasse" },
+      { icon: "\u{1F3D4}", desc: "Bergblick vom Balkon" }
+    ],
+    photoCount: "50+",
+    colors: { header: "linear-gradient(135deg,#b7510d,#e67e22)", num: "#935116", marker: "#e67e22" },
+    mapLat: 38.1730,
+    mapLng: 13.2370
+  },
+
+  // ═══════════════════════════════════════════════
   //  WEITERE UNTERKÜNFTE
   // ═══════════════════════════════════════════════
   {
