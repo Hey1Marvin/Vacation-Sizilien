@@ -143,7 +143,7 @@
 (function() {
   var SECTION = 'hotels';
   var config = SizilienConfig.load();
-  var hotels = DataStore.get(SECTION, HOTELS);
+  var hotels = HOTELS.slice(); // wird async aus shared.json aktualisiert
 
   // ─── Theme Toggle ───
   var THEME_KEY = 'sizilien-theme';
@@ -877,42 +877,28 @@
           cardEl.classList.add('deleting');
         }
 
-        // After animation: remove data + clean up votes/comments + update sections
+        // After animation: remove data globally + update sections
         var delay = cardEl ? 450 : 0;
         setTimeout(function() {
-          hotels = DataStore.remove(SECTION, id, HOTELS);
           if (cardEl) cardEl.remove();
 
-          // Clean up orphaned votes for this hotel
-          try {
-            var voteKey = 'sizilien2026_votes';
-            var allVotes = JSON.parse(localStorage.getItem(voteKey) || '{}');
-            if (allVotes.unterkuenfte && allVotes.unterkuenfte[id]) {
-              delete allVotes.unterkuenfte[id];
-              localStorage.setItem(voteKey, JSON.stringify(allVotes));
-            }
-          } catch(e) {}
+          // Global löschen (shared.json) — räumt auch Votes auf
+          SizilienData.deleteHotel(id, function() {
+            hotels = hotels.filter(function(h) { return h.id !== id; });
 
-          // Clean up orphaned comments for this hotel
-          try {
-            var commentKey = 'sizilien2026_kommentare';
-            var comments = JSON.parse(localStorage.getItem(commentKey) || '[]');
-            var cleaned = comments.filter(function(c) { return !(c.sektion === 'unterkuenfte' && String(c.itemId) === String(id)); });
-            if (cleaned.length !== comments.length) localStorage.setItem(commentKey, JSON.stringify(cleaned));
-          } catch(e) {}
+            // Update all sections that depend on hotels data
+            renderHero();
+            initMap();
+            renderLegend();
+            renderTables();
+            renderRankings();
+            renderCompareStrip();
+            renderVoting();
+            setupQuickStats();
+            setupTOC();
 
-          // Update all sections that depend on hotels data
-          renderHero();
-          initMap();
-          renderLegend();
-          renderTables();
-          renderRankings();
-          renderCompareStrip();
-          renderVoting();
-          setupQuickStats();
-          setupTOC();
-
-          toast('Unterkunft gel\u00F6scht');
+            toast('Unterkunft gel\u00F6scht');
+          });
         }, delay);
       },
       { confirmLabel: 'L\u00F6schen', danger: true }
@@ -965,17 +951,19 @@
 
   // ─── Render All ───
   function renderAll() {
-    hotels = DataStore.get(SECTION, HOTELS);
-    renderHero();
-    initMap();
-    renderLegend();
-    renderTables();
-    renderRankings();
-    renderCompareStrip();
-    renderCards();
-    renderVoting();
-    setupQuickStats();
-    setupTOC();
+    SizilienData.getHotels(HOTELS, function(err, h) {
+      hotels = h || HOTELS.slice();
+      renderHero();
+      initMap();
+      renderLegend();
+      renderTables();
+      renderRankings();
+      renderCompareStrip();
+      renderCards();
+      renderVoting();
+      setupQuickStats();
+      setupTOC();
+    });
   }
 
   renderAll();

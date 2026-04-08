@@ -8,6 +8,10 @@
     "polls": {},
     "verfuegbarkeit": {}
   },
+  "hotels": {
+    "deleted": [],
+    "added": []
+  },
   "kommentare": [],
   "todos": [
     { "id": "t1", "text": "Unterkunft ausw\u00e4hlen", "zustaendig": "", "deadline": "2026-04-15", "kategorie": "unterkunft", "prioritaet": "hoch", "status": "offen", "erstelltVon": "", "erstelltAm": "2026-03-30" },

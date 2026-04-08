@@ -33,6 +33,7 @@ var SizilienData = (function() {
     return {
       version: 1,
       votes: { unterkuenfte: {}, aktivitaeten: {}, polls: {}, verfuegbarkeit: {} },
+      hotels: { deleted: [], added: [] },
       kommentare: [],
       todos: [],
       ideen: [],
@@ -325,6 +326,65 @@ var SizilienData = (function() {
       self.load(function(err, data) {
         data.zustaendigkeiten[itemId] = personId;
         self.save(data, personId + ' is responsible for ' + itemId, callback);
+      });
+    },
+
+    // ── Hotel-Sync: Löschungen/Hinzufügungen global speichern ──
+    deleteHotel: function(hotelId, callback) {
+      var self = this;
+      self.load(function(err, data) {
+        if (!data.hotels) data.hotels = { deleted: [], added: [] };
+        if (data.hotels.deleted.indexOf(hotelId) === -1) {
+          data.hotels.deleted.push(hotelId);
+        }
+        // Falls das Hotel vorher über added hinzugefügt wurde, dort auch entfernen
+        data.hotels.added = (data.hotels.added || []).filter(function(h) { return h.id !== hotelId; });
+        // Votes für dieses Hotel auch aufräumen
+        if (data.votes && data.votes.unterkuenfte && data.votes.unterkuenfte[hotelId]) {
+          delete data.votes.unterkuenfte[hotelId];
+        }
+        self.save(data, 'Deleted hotel #' + hotelId, callback);
+      });
+    },
+
+    addHotel: function(hotel, callback) {
+      var self = this;
+      self.load(function(err, data) {
+        if (!data.hotels) data.hotels = { deleted: [], added: [] };
+        // Falls vorher gelöscht, wieder freigeben
+        data.hotels.deleted = data.hotels.deleted.filter(function(id) { return id !== hotel.id; });
+        // Prüfen ob schon vorhanden
+        var existing = data.hotels.added.findIndex(function(h) { return h.id === hotel.id; });
+        if (existing >= 0) {
+          data.hotels.added[existing] = hotel;
+        } else {
+          data.hotels.added.push(hotel);
+        }
+        self.save(data, 'Added hotel: ' + hotel.name, callback);
+      });
+    },
+
+    // Hotels aus Defaults + shared.json zusammenbauen
+    getHotels: function(defaults, callback) {
+      this.load(function(err, data) {
+        var hotels = JSON.parse(JSON.stringify(defaults));
+        if (data && data.hotels) {
+          // Gelöschte rausfiltern
+          if (data.hotels.deleted && data.hotels.deleted.length) {
+            hotels = hotels.filter(function(h) {
+              return data.hotels.deleted.indexOf(h.id) === -1;
+            });
+          }
+          // Hinzugefügte dazufügen
+          if (data.hotels.added) {
+            data.hotels.added.forEach(function(h) {
+              if (!hotels.find(function(x) { return x.id === h.id; })) {
+                hotels.push(h);
+              }
+            });
+          }
+        }
+        callback(null, hotels);
       });
     },
 
