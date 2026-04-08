@@ -8,7 +8,7 @@ var SizilienData = (function() {
   var REPO_NAME = 'Vacation-Sizilien';
   var DATA_PATH = 'data/shared.json';
   var BRANCH = 'main';
-  var WORKER_URL = ''; // z.B. 'https://sizilien-sync.marvin.workers.dev' — nach Deploy setzen
+  var WORKER_URL = 'https://sizilien-sync.sizilien.workers.dev';
 
   var API_BASE = 'https://api.github.com';
   var _cache = null;
