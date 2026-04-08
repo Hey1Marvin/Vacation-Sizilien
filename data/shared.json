@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-04-08T23:47:31.193Z",
+  "lastUpdated": "2026-04-08T23:47:33.269Z",
   "lastUpdatedBy": "person1",
   "votes": {
     "unterkuenfte": {
@@ -14,6 +14,9 @@
         "person1": 1
       },
       "15": {
+        "person1": 1
+      },
+      "17": {
         "person1": 1
       }
     },
