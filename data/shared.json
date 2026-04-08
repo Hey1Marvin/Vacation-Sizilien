@@ -1,9 +1,13 @@
 {
   "version": 1,
-  "lastUpdated": "",
-  "lastUpdatedBy": "",
+  "lastUpdated": "2026-04-08T23:40:31.358Z",
+  "lastUpdatedBy": "person1",
   "votes": {
-    "unterkuenfte": {},
+    "unterkuenfte": {
+      "3": {
+        "person1": 1
+      }
+    },
     "aktivitaeten": {},
     "polls": {},
     "verfuegbarkeit": {}
@@ -14,11 +18,61 @@
   },
   "kommentare": [],
   "todos": [
-    { "id": "t1", "text": "Unterkunft ausw\u00e4hlen", "zustaendig": "", "deadline": "2026-04-15", "kategorie": "unterkunft", "prioritaet": "hoch", "status": "offen", "erstelltVon": "", "erstelltAm": "2026-03-30" },
-    { "id": "t2", "text": "Fl\u00fcge buchen", "zustaendig": "", "deadline": "2026-04-30", "kategorie": "fluege", "prioritaet": "hoch", "status": "offen", "erstelltVon": "", "erstelltAm": "2026-03-30" },
-    { "id": "t3", "text": "Mietwagen reservieren", "zustaendig": "", "deadline": "2026-05-15", "kategorie": "auto", "prioritaet": "mittel", "status": "offen", "erstelltVon": "", "erstelltAm": "2026-03-30" },
-    { "id": "t4", "text": "Reiseversicherung abschlie\u00dfen", "zustaendig": "", "deadline": "2026-05-20", "kategorie": "sonstiges", "prioritaet": "mittel", "status": "offen", "erstelltVon": "", "erstelltAm": "2026-03-30" },
-    { "id": "t5", "text": "Packliste durchgehen", "zustaendig": "", "deadline": "2026-05-28", "kategorie": "packliste", "prioritaet": "niedrig", "status": "offen", "erstelltVon": "", "erstelltAm": "2026-03-30" }
+    {
+      "id": "t1",
+      "text": "Unterkunft auswählen",
+      "zustaendig": "",
+      "deadline": "2026-04-15",
+      "kategorie": "unterkunft",
+      "prioritaet": "hoch",
+      "status": "offen",
+      "erstelltVon": "",
+      "erstelltAm": "2026-03-30"
+    },
+    {
+      "id": "t2",
+      "text": "Flüge buchen",
+      "zustaendig": "",
+      "deadline": "2026-04-30",
+      "kategorie": "fluege",
+      "prioritaet": "hoch",
+      "status": "offen",
+      "erstelltVon": "",
+      "erstelltAm": "2026-03-30"
+    },
+    {
+      "id": "t3",
+      "text": "Mietwagen reservieren",
+      "zustaendig": "",
+      "deadline": "2026-05-15",
+      "kategorie": "auto",
+      "prioritaet": "mittel",
+      "status": "offen",
+      "erstelltVon": "",
+      "erstelltAm": "2026-03-30"
+    },
+    {
+      "id": "t4",
+      "text": "Reiseversicherung abschließen",
+      "zustaendig": "",
+      "deadline": "2026-05-20",
+      "kategorie": "sonstiges",
+      "prioritaet": "mittel",
+      "status": "offen",
+      "erstelltVon": "",
+      "erstelltAm": "2026-03-30"
+    },
+    {
+      "id": "t5",
+      "text": "Packliste durchgehen",
+      "zustaendig": "",
+      "deadline": "2026-05-28",
+      "kategorie": "packliste",
+      "prioritaet": "niedrig",
+      "status": "offen",
+      "erstelltVon": "",
+      "erstelltAm": "2026-03-30"
+    }
   ],
   "ideen": [],
   "ausgaben": [],
