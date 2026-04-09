@@ -15,7 +15,7 @@ const HOTELS = [
   //  SEBAS-VORSCHLÄGE (oben im Ranking)
   // ═══════════════════════════════════════════════
   {
-    id: 3,
+    id: 1,
     name: "Villetta \u201EAnnina\u201C",
     type: "Privatunterkunft",
     location: "Trabia",
@@ -63,7 +63,7 @@ const HOTELS = [
     mapLng: 13.6480
   },
   {
-    id: 4,
+    id: 2,
     name: "MetaM Apt",
     type: "Apartment",
     location: "Palermo Stadtzentrum",
@@ -111,7 +111,7 @@ const HOTELS = [
     mapLng: 13.3615
   },
   {
-    id: 5,
+    id: 3,
     name: "Casa Mareluna",
     type: "Privatunterkunft (3 Etagen)",
     location: "Porticello",
@@ -163,7 +163,7 @@ const HOTELS = [
   //  WEITERE AUSWAHL
   // ═══════════════════════════════════════════════
   {
-    id: 20,
+    id: 4,
     name: "Casa MiRo",
     type: "Ferienwohnung (ganze Wohnung)",
     location: "Sferracavallo (Palermo)",
@@ -211,7 +211,7 @@ const HOTELS = [
     mapLng: 13.2680
   },
   {
-    id: 21,
+    id: 5,
     name: "Casa Vacanze Trinacria",
     type: "Ferienwohnung (ganze Wohnung)",
     location: "Isola delle Femmine",
@@ -260,7 +260,7 @@ const HOTELS = [
     mapLng: 13.2450
   },
   {
-    id: 17,
+    id: 6,
     name: "Villa Salvatore",
     type: "Pension (B&B)",
     location: "Capaci",
@@ -309,7 +309,7 @@ const HOTELS = [
     mapLng: 13.2370
   },
   {
-    id: 19,
+    id: 7,
     name: "House of Lady",
     type: "Ferienwohnung (ganze Wohnung)",
     location: "Carini",

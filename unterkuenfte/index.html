@@ -593,12 +593,27 @@
     if (byPPN.length) rankHtml += '<div class="ranking-card"><h3>' + Icons.euro({size: 14}) + ' Preis-Leistung</h3>' + rl(byPPN, function(h) { return pricePPN(h) + ' \u20AC/P./N.'; }) + '</div>';
     if (byRating.length) rankHtml += '<div class="ranking-card"><h3>' + Icons.star({size: 14}) + ' Bewertung</h3>' + rl(byRating, function(h) { return ratingDisplay(h); }) + '</div>';
     if (bySqm.length) rankHtml += '<div class="ranking-card"><h3>' + Icons.building({size: 14}) + ' Gr\u00F6\u00DFe</h3>' + rl(bySqm, function(h) { return h.sqm + ' m\u00B2'; }) + '</div>';
+
+    // Abstimmungs-Ranking aus lokalen Votes
+    var voteData = getLocalVotesForDisplay();
+    var scores = SizilienVoting.bordaCount(voteData, 3);
+    var byVote = Object.keys(scores).sort(function(a, b) { return scores[b].punkte - scores[a].punkte; })
+      .filter(function(id) { return scores[id].punkte > 0; })
+      .map(function(id) { return hotels.find(function(x) { return String(x.id) === String(id); }); })
+      .filter(function(h) { return !!h; })
+      .slice(0, 5);
+    if (byVote.length) {
+      rankHtml += '<div class="ranking-card"><h3>' + Icons.users({size: 14}) + ' Gruppen-Abstimmung</h3>' +
+        rl(byVote, function(h) { var s = scores[h.id]; return s ? s.punkte + ' Pkt.' : ''; }) + '</div>';
+    }
+
     var gesamtHtml = '<div class="ranking-card"><h3>' + Icons.star({size: 14}) + ' Gesamtsieger</h3>';
     if (byPPN.length || byRating.length || bySqm.length) {
       gesamtHtml += '<ol class="ranking-list">';
       if (byPPN.length) gesamtHtml += '<li class="winner"><span>' + medalHtml(0) + ' <strong>' + esc(byPPN[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Bestes P/L</span></li>';
       if (byRating.length) gesamtHtml += '<li><span>' + medalHtml(1) + ' <strong>' + esc(byRating[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Beste Bewertung</span></li>';
       if (bySqm.length) gesamtHtml += '<li><span>' + medalHtml(2) + ' <strong>' + esc(bySqm[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Gr\u00F6\u00DFte</span></li>';
+      if (byVote.length) gesamtHtml += '<li><span>' + medalHtml(3) + ' <strong>' + esc(byVote[0].name) + '</strong></span><span style="color:var(--gray-400);font-size:.75rem">Gruppen-Favorit</span></li>';
       gesamtHtml += '</ol>';
     } else {
       gesamtHtml += '<p style="color:var(--gray-400);padding:var(--space-3)">Keine Unterk\u00FCnfte vorhanden</p>';
