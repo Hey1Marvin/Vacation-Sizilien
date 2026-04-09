@@ -28,6 +28,9 @@
     <span class="hero-badge" id="hero-badge"></span>
     <h1>Unterk&uuml;nfte</h1>
     <p class="hero-subtitle" id="hero-subtitle"></p>
+    <!-- Trip Overview Chips -->
+    <div class="trip-overview" id="trip-overview"></div>
+
     <div class="hero-stats">
       <div class="hero-stat">
         <span class="hero-stat-value" id="hero-price-range"></span>
@@ -48,9 +51,6 @@
     </div>
   </div>
 </section>
-
-<!-- Trip Overview -->
-<div class="trip-overview" id="trip-overview"></div>
 
 <!-- Sticky Quick Stats -->
 <div class="quick-stats" id="quick-stats">
@@ -250,7 +250,7 @@
     var locCount = Object.keys(locations).length;
 
     document.getElementById('hero-badge').innerHTML = Icons.building({size: 14}) + ' ' + hotels.length + ' Unterk\u00FCnfte verglichen';
-    document.getElementById('hero-subtitle').textContent = '\u00DCbersicht & Vergleich \u00B7 ' + config.personen + ' Personen \u00B7 ' + config.zielort;
+    document.getElementById('hero-subtitle').textContent = '\u00DCbersicht & Vergleich aller Optionen';
     document.getElementById('hero-price-range').textContent = minPrice + ' \u2013 ' + maxPrice + ' \u20AC';
     document.getElementById('hero-best-rated').innerHTML = Icons.star({size: 16}) + ' ' + (bestRated ? ratingDisplay(bestRated) : '-');
     document.getElementById('hero-cheapest').textContent = minPPN.toFixed(2) + ' \u20AC';
