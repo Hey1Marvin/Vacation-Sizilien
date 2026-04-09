@@ -16,7 +16,8 @@
       { name: 'Sebas', fuehrerschein: false, faehrtImAusland: false, notizen: '' },
       { name: 'Albert', fuehrerschein: false, faehrtImAusland: false, notizen: '' }
     ],
-    reisezeitraum: { von: '2026-06-01', bis: '2026-06-14' },
+    reisezeitraum: { von: '2026-06-22', bis: '2026-06-29' },
+    flugpreis: 130,
     zielort: 'Palermo, Sizilien',
     zielflughafen: 'Palermo Falcone-Borsellino (PMO)',
     waehrung: 'EUR',

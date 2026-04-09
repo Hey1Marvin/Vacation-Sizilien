@@ -145,6 +145,32 @@
   margin-top: 2px;
 }
 
+/* ─── Trip Overview ─── */
+.trip-overview {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-5);
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+}
+.trip-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.trip-chip svg { opacity: 0.6; }
+.trip-chip small { font-weight: 400; color: var(--gray-400); margin-left: 2px; }
+
 /* ─── Sticky Quick Stats ─── */
 .quick-stats {
   position: sticky;

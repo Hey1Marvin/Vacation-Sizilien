@@ -49,6 +49,9 @@
   </div>
 </section>
 
+<!-- Trip Overview -->
+<div class="trip-overview" id="trip-overview"></div>
+
 <!-- Sticky Quick Stats -->
 <div class="quick-stats" id="quick-stats">
   <span class="qs-item" id="qs-count"></span>
@@ -260,6 +263,16 @@
 
     document.getElementById('map-count').textContent = hotels.length + ' Standorte';
     document.getElementById('detail-count').textContent = hotels.length + ' Optionen';
+
+    // Trip overview
+    var days = SizilienConfig.getTripDays();
+    var dateRange = SizilienConfig.formatDateRange();
+    var flug = config.flugpreis || '~130';
+    document.getElementById('trip-overview').innerHTML =
+      '<div class="trip-chip">' + Icons.calendar({size: 14}) + ' ' + dateRange + ' <small>(' + days + ' N\u00E4chte)</small></div>' +
+      '<div class="trip-chip">' + Icons.users({size: 14}) + ' ' + config.personen + ' Personen</div>' +
+      '<div class="trip-chip">' + Icons.plane({size: 14}) + ' Flug ~' + flug + ' \u20AC<small>/Person</small></div>' +
+      '<div class="trip-chip">' + Icons.mapPin({size: 14}) + ' ' + esc(config.zielort) + '</div>';
   }
 
   // ─── Intersection Observer for Quick Stats ───
