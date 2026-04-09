@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-04-08T23:55:44.718Z",
+  "lastUpdated": "2026-04-09T01:21:45.051Z",
   "lastUpdatedBy": "person1",
   "votes": {
     "unterkuenfte": {
@@ -23,7 +23,7 @@
   "todos": [
     {
       "id": "t1",
-      "text": "Unterkunft auswÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¤hlen",
+      "text": "Unterkunft auswÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¤hlen",
       "zustaendig": "",
       "deadline": "2026-04-15",
       "kategorie": "unterkunft",
@@ -34,7 +34,7 @@
     },
     {
       "id": "t2",
-      "text": "FlÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¼ge buchen",
+      "text": "FlÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¼ge buchen",
       "zustaendig": "",
       "deadline": "2026-04-30",
       "kategorie": "fluege",
@@ -56,7 +56,7 @@
     },
     {
       "id": "t4",
-      "text": "Reiseversicherung abschlieÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂen",
+      "text": "Reiseversicherung abschlieÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂen",
       "zustaendig": "",
       "deadline": "2026-05-20",
       "kategorie": "sonstiges",
