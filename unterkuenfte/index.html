@@ -107,8 +107,8 @@
       <label>Wer bist du?</label>
       <div id="voter-select"></div>
     </div>
-    <h3>W&auml;hle deine Top 3 Unterk&uuml;nfte</h3>
-    <p style="color:var(--gray-400);font-size:.85em;margin-bottom:15px">Klicke 1. / 2. / 3. um deine Favoriten zu markieren, oder <strong>&times;</strong> f&uuml;r &bdquo;gar nicht&ldquo;. Dann klicke <strong>Speichern</strong>.</p>
+    <h3>Bewerte die Unterk&uuml;nfte</h3>
+    <p style="color:var(--gray-400);font-size:.85em;margin-bottom:15px"><strong>+2</strong> Favorit &middot; <strong>+1</strong> Gut &middot; <strong>0</strong> Egal &middot; <strong>-1</strong> Nein. Nochmal klicken zum Zur&uuml;cknehmen. Dann <strong>Speichern</strong>.</p>
     <div class="voting-grid" id="voting-grid"></div>
     <div id="vote-save-bar" style="display:none;text-align:center;margin:16px 0">
       <button onclick="saveVotes()" class="btn btn-primary" style="padding:10px 32px;font-size:1.1em">Abstimmung speichern</button>
@@ -619,10 +619,10 @@
     kommunikation: 'Kommunikation'
   };
 
-  // ─── Quick Compare Strip ───
+  // ─── Quick Compare Strip (nach Preis sortiert, gemischt) ───
   function renderCompareStrip() {
     var html = '';
-    hotels.forEach(function(h) {
+    hotels.slice().sort(function(a, b) { return a.totalPrice - b.totalPrice; }).forEach(function(h) {
       var rCls = ratingClass(h);
       var ppn = pricePPN(h);
       var sebas = isSebas(h);
@@ -905,7 +905,7 @@
           (sebas ? ' <span class="sebas-badge">' + Icons.users({size: 10}) + ' Sebas</span>' : '') +
           ' <small style="color:var(--gray-400)">' + h.totalPrice + '\u20AC</small>' +
         '</div>' +
-        SizilienVoting.renderRankedVotingCard(h.id, h.name, 'unterkuenfte', itemVotes, 3) +
+        SizilienVoting.renderRankedVotingCard(h.id, h.name, 'unterkuenfte', itemVotes) +
       '</div>';
     });
     document.getElementById('voting-grid').innerHTML = html;
@@ -917,7 +917,7 @@
     Object.keys(votes).forEach(function(key) {
       if (activeIds[key] || activeIds[Number(key)]) filteredVotes[key] = votes[key];
     });
-    var scores = SizilienVoting.bordaCount(filteredVotes, 3);
+    var scores = SizilienVoting.bordaCount(filteredVotes);
     document.getElementById('borda-chart').innerHTML = SizilienVoting.renderBordaChart(scores, hotels, function(id) {
       var h = hotels.find(function(x) { return String(x.id) === String(id); });
       return h ? h.name : 'Hotel ' + id;
@@ -995,14 +995,21 @@
     renderVoting();
   };
 
-  // ─── Ranked vote (sofort lokal, kein Server-Call) ───
+  // ─── Vote abgeben (sofort lokal, kein Server-Call) ───
+  // Toggle: nochmal klicken → Stimme zurücknehmen
   window.voteRanked = function(sektion, itemId, rang) {
     var userId = getActiveUser();
     if (!userId) { toast('Bitte w\u00E4hle zuerst aus, wer du bist!'); return; }
+    var currentVotes = getLocalVotesForDisplay();
+    var currentVote = currentVotes[itemId] && currentVotes[itemId][userId];
     var pending = getPending();
-    pending[itemId] = (rang === 0) ? null : rang;
+    // Toggle: gleichen Wert nochmal → zurücknehmen
+    if (currentVote === rang) {
+      pending[itemId] = null;
+    } else {
+      pending[itemId] = rang;
+    }
     setPending(pending);
-    // Sofort UI updaten (alles lokal, 0ms)
     doRenderVoting(getLocalVotesForDisplay());
   };
 

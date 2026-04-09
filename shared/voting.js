@@ -13,17 +13,16 @@ var SizilienVoting = (function() {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(votes));
   }
 
-  // ── Ranked Choice Vote abgeben (rang=0 oder null entfernt die Stimme) ──
+  // ── Vote abgeben (null entfernt die Stimme, 0 ist gültiger Wert "Egal") ──
   function castRankedVote(sektion, itemId, userId, rang, callback) {
     callback = callback || function() {};
     if (typeof SizilienData !== 'undefined' && SizilienData.isConfigured()) {
-      var value = (rang === 0 || rang === null) ? null : rang;
-      SizilienData.vote(sektion, itemId, userId, value, callback);
+      SizilienData.vote(sektion, itemId, userId, rang, callback);
     } else {
       var votes = getLocalVotes();
       if (!votes[sektion]) votes[sektion] = {};
       if (!votes[sektion][itemId]) votes[sektion][itemId] = {};
-      if (rang === 0 || rang === null) {
+      if (rang === null || rang === undefined) {
         delete votes[sektion][itemId][userId];
       } else {
         votes[sektion][itemId][userId] = rang;
@@ -55,19 +54,19 @@ var SizilienVoting = (function() {
     }
   }
 
-  // ── Borda Count Berechnung (für Ranked Choice) ──
-  // rang=1 → höchste Punkte, rang=N → niedrigste
-  function bordaCount(votes, maxRang) {
-    maxRang = maxRang || 3;
+  // ── Punkte-Berechnung ──
+  // Skala: +2 (Favorit), +1 (Gut), 0 (Egal), -1 (Nein)
+  // Punkte = Summe aller abgegebenen Stimmen
+  function bordaCount(votes) {
     var scores = {};
     Object.keys(votes).forEach(function(itemId) {
       var itemVotes = votes[itemId];
       var total = 0;
       var voterCount = 0;
       Object.keys(itemVotes).forEach(function(userId) {
-        var rang = itemVotes[userId];
-        if (typeof rang === 'number' && rang >= 1 && rang <= maxRang) {
-          total += (maxRang + 1 - rang); // rang 1 → maxRang Punkte
+        var val = itemVotes[userId];
+        if (typeof val === 'number') {
+          total += val;
           voterCount++;
         }
       });
@@ -75,6 +74,10 @@ var SizilienVoting = (function() {
     });
     return scores;
   }
+
+  // Vote-Wert → Label für Tooltips
+  var VOTE_LABELS = { 2: 'Favorit', 1: 'Gut', 0: 'Egal', '-1': 'Nein' };
+  function voteLabel(val) { return VOTE_LABELS[val] || String(val); }
 
   // ── Ja/Nein Zählung ──
   function countBoolVotes(votes) {
@@ -105,25 +108,26 @@ var SizilienVoting = (function() {
     return results;
   }
 
-  // ── UI: Ranked Choice Voting Card rendern ──
-  function renderRankedVotingCard(itemId, itemName, sektion, userVotes, maxRang) {
-    maxRang = maxRang || 3;
+  // ── UI: Bewertungs-Buttons rendern ──
+  // Skala: +2 (Favorit), +1 (Gut), 0 (Egal), -1 (Nein)
+  var VOTE_OPTIONS = [
+    { value: 2, label: '+2', title: 'Favorit', cls: 'vote-fav' },
+    { value: 1, label: '+1', title: 'Gut', cls: 'vote-good' },
+    { value: 0, label: '0', title: 'Egal', cls: 'vote-meh' },
+    { value: -1, label: '-1', title: 'Nein', cls: 'vote-nope' }
+  ];
+
+  function renderRankedVotingCard(itemId, itemName, sektion, userVotes) {
     var activeUser = getActiveUser();
-    var currentVote = userVotes && userVotes[activeUser] ? userVotes[activeUser] : null;
+    var currentVote = userVotes && activeUser && (activeUser in userVotes) ? userVotes[activeUser] : null;
 
     var html = '<div class="voting-inline">';
-    for (var r = 1; r <= maxRang; r++) {
-      var isSelected = currentVote === r;
-      html += '<button class="vote-rank-btn' + (isSelected ? ' selected' : '') + '" ' +
-        'onclick="voteRanked(\'' + sektion + '\',' + itemId + ',' + r + ')" ' +
-        'title="' + r + '. Wahl">' + r + '.</button>';
-    }
-    // "Gar nicht" Button (clear vote)
-    html += '<button class="vote-rank-btn vote-nope' + (currentVote === 0 ? ' selected' : '') + '" ' +
-      'onclick="voteRanked(\'' + sektion + '\',' + itemId + ',0)" ' +
-      'title="Gar nicht">' +
-      (typeof Icons !== 'undefined' ? Icons.x({size: 12}) : '\u2715') +
-      '</button>';
+    VOTE_OPTIONS.forEach(function(opt) {
+      var isSelected = currentVote === opt.value;
+      html += '<button class="vote-rank-btn ' + opt.cls + (isSelected ? ' selected' : '') + '" ' +
+        'onclick="voteRanked(\'' + sektion + '\',' + itemId + ',' + opt.value + ')" ' +
+        'title="' + opt.title + '">' + opt.label + '</button>';
+    });
 
     // Wer hat gestimmt
     if (userVotes) {
@@ -165,29 +169,30 @@ var SizilienVoting = (function() {
     return html;
   }
 
-  // ── UI: Borda-Ranking Balkendiagramm ──
+  // ── UI: Gruppen-Ranking Balkendiagramm ──
   function renderBordaChart(scores, items, nameGetter) {
     var sorted = Object.keys(scores).sort(function(a, b) {
       return scores[b].punkte - scores[a].punkte;
     });
-    var maxScore = sorted.length > 0 ? scores[sorted[0]].punkte : 1;
-    if (maxScore === 0) maxScore = 1;
+    // Max für Balkenlänge: mindestens 1, negative Werte → Balken bei 0%
+    var maxScore = sorted.length > 0 ? Math.max(scores[sorted[0]].punkte, 1) : 1;
 
     var html = '<div class="borda-chart">';
     sorted.forEach(function(itemId, i) {
       var s = scores[itemId];
-      var pct = Math.round(s.punkte / maxScore * 100);
+      var pct = s.punkte > 0 ? Math.round(s.punkte / maxScore * 100) : 0;
       var name = nameGetter(itemId);
       var medal = i === 0 ? '\u{1F947}' : i === 1 ? '\u{1F948}' : i === 2 ? '\u{1F949}' : '';
+      var sign = s.punkte > 0 ? '+' : '';
 
-      html += '<div class="borda-row">' +
+      html += '<div class="borda-row' + (s.punkte < 0 ? ' borda-negative' : '') + '">' +
         '<div class="borda-label">' + medal + ' ' + esc(name) + '</div>' +
-        '<div class="borda-bar-track"><div class="borda-bar-fill" style="width:' + pct + '%">' +
-        s.punkte + ' Pkt. (' + s.stimmen + ' Stimmen)</div></div>' +
+        '<div class="borda-bar-track"><div class="borda-bar-fill' + (s.punkte < 0 ? ' negative' : '') + '" style="width:' + Math.max(pct, s.stimmen ? 8 : 0) + '%">' +
+        sign + s.punkte + ' Pkt. (' + s.stimmen + ')</div></div>' +
         '<div class="borda-voters">';
       Object.keys(s.details).forEach(function(uid) {
         var r = getReisenderById(uid);
-        if (r) html += '<span title="' + esc(r.name) + ': ' + s.details[uid] + '. Wahl">' + renderInitiale(r, 22) + '</span>';
+        if (r) html += '<span title="' + esc(r.name) + ': ' + voteLabel(s.details[uid]) + '">' + renderInitiale(r, 22) + '</span>';
       });
       html += '</div></div>';
     });

@@ -8,9 +8,10 @@
   flex-wrap: wrap;
 }
 .vote-rank-btn {
-  width: 36px;
+  min-width: 36px;
   height: 36px;
-  border-radius: 50%;
+  padding: 0 8px;
+  border-radius: 8px;
   border: 2px solid var(--border);
   background: var(--card-bg);
   color: var(--text);
@@ -24,26 +25,18 @@
   border-color: var(--primary-light);
   background: var(--info-light);
 }
-.vote-rank-btn.selected {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-.vote-nope {
-  border-color: var(--gray-200);
-  color: var(--gray-400);
-  font-size: 0.7em;
-}
-.vote-nope:hover {
-  border-color: var(--error);
-  background: var(--error-light);
-  color: var(--error);
-}
-.vote-nope.selected {
-  background: var(--error-light);
-  color: var(--error);
-  border-color: var(--error);
-}
+/* +2 Favorit */
+.vote-fav:hover { border-color: var(--green); background: var(--success-light); }
+.vote-fav.selected { background: var(--green); color: #fff; border-color: var(--green); }
+/* +1 Gut */
+.vote-good:hover { border-color: #3498db; background: var(--info-light); }
+.vote-good.selected { background: #3498db; color: #fff; border-color: #3498db; }
+/* 0 Egal */
+.vote-meh:hover { border-color: var(--gray-300); background: var(--gray-100); }
+.vote-meh.selected { background: var(--gray-300); color: #fff; border-color: var(--gray-300); }
+/* -1 Nein */
+.vote-nope:hover { border-color: var(--error); background: var(--error-light); color: var(--error); }
+.vote-nope.selected { background: var(--error); color: #fff; border-color: var(--error); }
 .vote-voters {
   display: flex;
   gap: 3px;
@@ -182,6 +175,12 @@
   white-space: nowrap;
   min-width: fit-content;
   transition: width .5s;
+}
+.borda-bar-fill.negative {
+  background: linear-gradient(135deg, var(--error), #e74c3c);
+}
+.borda-negative .borda-label {
+  color: var(--gray-400);
 }
 .borda-voters {
   display: flex;
