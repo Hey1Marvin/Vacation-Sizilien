@@ -467,27 +467,44 @@
   }
 
   // ─── Comparison Table (alle Hotels in einer Tabelle) ───
-  var sortCol = { col: 'price', asc: true };
+  var sortCol = { col: 'mixed', asc: true };
 
   function isSebas(h) { return h.selectedBy && h.selectedBy.toLowerCase() === 'sebas'; }
+
+  // Sebas & Nicht-Sebas abwechselnd mischen (jeweils nach Preis sortiert)
+  function interleaveHotels(hotels) {
+    var sebas = hotels.filter(isSebas).sort(function(a, b) { return a.totalPrice - b.totalPrice; });
+    var andere = hotels.filter(function(h) { return !isSebas(h); }).sort(function(a, b) { return a.totalPrice - b.totalPrice; });
+    var result = [];
+    var maxLen = Math.max(sebas.length, andere.length);
+    for (var i = 0; i < maxLen; i++) {
+      if (i < sebas.length) result.push(sebas[i]);
+      if (i < andere.length) result.push(andere[i]);
+    }
+    return result;
+  }
 
   function renderTables() {
     var list = hotels.slice();
 
     // Sort
-    list.sort(function(a, b) {
-      switch (sortCol.col) {
-        case 'name': return sortCol.asc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-        case 'price': return sortCol.asc ? a.totalPrice - b.totalPrice : b.totalPrice - a.totalPrice;
-        case 'ppn': return sortCol.asc ? pricePPN(a) - pricePPN(b) : pricePPN(b) - pricePPN(a);
-        case 'rating':
-          var ra = a.ratingScale === 5 ? a.rating * 2 : a.rating;
-          var rb = b.ratingScale === 5 ? b.rating * 2 : b.rating;
-          return sortCol.asc ? ra - rb : rb - ra;
-        case 'sqm': return sortCol.asc ? (a.sqm||0) - (b.sqm||0) : (b.sqm||0) - (a.sqm||0);
-        default: return a.totalPrice - b.totalPrice;
-      }
-    });
+    if (sortCol.col === 'mixed') {
+      list = interleaveHotels(list);
+    } else {
+      list.sort(function(a, b) {
+        switch (sortCol.col) {
+          case 'name': return sortCol.asc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+          case 'price': return sortCol.asc ? a.totalPrice - b.totalPrice : b.totalPrice - a.totalPrice;
+          case 'ppn': return sortCol.asc ? pricePPN(a) - pricePPN(b) : pricePPN(b) - pricePPN(a);
+          case 'rating':
+            var ra = a.ratingScale === 5 ? a.rating * 2 : a.rating;
+            var rb = b.ratingScale === 5 ? b.rating * 2 : b.rating;
+            return sortCol.asc ? ra - rb : rb - ra;
+          case 'sqm': return sortCol.asc ? (a.sqm||0) - (b.sqm||0) : (b.sqm||0) - (a.sqm||0);
+          default: return a.totalPrice - b.totalPrice;
+        }
+      });
+    }
 
     // Find best values across all hotels
     var minPrice = Math.min.apply(null, list.map(function(h) { return h.totalPrice; }));
