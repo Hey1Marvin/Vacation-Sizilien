@@ -145,30 +145,31 @@
   margin-top: 2px;
 }
 
-/* ─── Trip Overview (inside Hero) ─── */
+/* ─── Trip Overview Bar ─── */
 .trip-overview {
   display: flex;
-  gap: var(--space-2);
+  justify-content: center;
+  gap: var(--space-3);
   flex-wrap: wrap;
-  margin-bottom: var(--space-6);
+  padding: var(--space-3) var(--space-5);
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
 }
 .trip-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
+  gap: 6px;
+  padding: 6px 14px;
   border-radius: var(--radius-full);
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.15);
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: rgba(255,255,255,0.85);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
   white-space: nowrap;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
-.trip-chip svg { opacity: 0.7; }
-.trip-chip small { font-weight: 400; color: rgba(255,255,255,0.55); margin-left: 2px; }
+.trip-chip svg { opacity: 0.6; }
+.trip-chip small { font-weight: 400; color: var(--gray-400); margin-left: 2px; }
 
 /* ─── Sticky Quick Stats ─── */
 .quick-stats {
@@ -1168,7 +1169,6 @@ html { scroll-behavior: smooth; }
 @media (max-width: 768px) {
   .hero { padding: var(--space-10) var(--space-4) var(--space-8); }
   .hero h1 { font-size: 1.8rem; }
-  .trip-overview { justify-content: center; }
   .trip-chip { font-size: 0.72rem; padding: 4px 10px; }
   .hero-stats { flex-direction: column; gap: var(--space-3); }
   .hero-stat { min-width: auto; }
