@@ -1168,6 +1168,8 @@ html { scroll-behavior: smooth; }
 @media (max-width: 768px) {
   .hero { padding: var(--space-10) var(--space-4) var(--space-8); }
   .hero h1 { font-size: 1.8rem; }
+  .trip-overview { justify-content: center; }
+  .trip-chip { font-size: 0.72rem; padding: 4px 10px; }
   .hero-stats { flex-direction: column; gap: var(--space-3); }
   .hero-stat { min-width: auto; }
 
